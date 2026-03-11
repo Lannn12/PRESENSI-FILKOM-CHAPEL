@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     // Validate token & get meeting
     const { data: meeting, error: meetErr } = await supabase
       .from('meetings')
-      .select('id, nama_event, status, tanggal')
+      .select('id, nama_event, status, tanggal, semester_id')
       .eq('scanner_token', token)
       .single()
 
@@ -44,10 +44,22 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (existing) {
+      let section_title: string | null = null
+      const { data: seatData } = await supabase
+        .from('student_sections')
+        .select('section:sections(title)')
+        .eq('student_id', student.id)
+        .eq('semester_id', meeting.semester_id)
+        .single()
+      if (seatData?.section && typeof seatData.section === 'object' && 'title' in seatData.section) {
+        section_title = (seatData.section as { title: string }).title
+      }
+
       return NextResponse.json({
         warning: true,
         message: `${student.last_name}, ${student.first_name} sudah tercatat sebagai ${existing.status}.`,
         student,
+        section_title,
       })
     }
 
@@ -64,11 +76,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Gagal menyimpan presensi: ' + insErr.message }, { status: 500 })
     }
 
+    // Lookup student's seating section for this semester
+    let section_title: string | null = null
+    const { data: seatData } = await supabase
+      .from('student_sections')
+      .select('section:sections(title)')
+      .eq('student_id', student.id)
+      .eq('semester_id', meeting.semester_id)
+      .single()
+    if (seatData?.section && typeof seatData.section === 'object' && 'title' in seatData.section) {
+      section_title = (seatData.section as { title: string }).title
+    }
+
     return NextResponse.json({
       success: true,
       message: `${student.last_name}, ${student.first_name} — ${status}`,
       student,
       status,
+      section_title,
     })
   } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })

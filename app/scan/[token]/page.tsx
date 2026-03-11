@@ -14,6 +14,7 @@ interface RecentScan {
   status: 'HADIR' | 'LATE'
   waktu_scan: string
   student: { no_regis: string; first_name: string; last_name: string } | null
+  section_title?: string | null
 }
 
 interface MeetingInfo {
@@ -196,7 +197,8 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       setSubmitting(false)
 
       if (data.success) {
-        setFeedback({ type: 'success', message: data.message as string })
+        const sectionLabel = data.section_title ? ` · 📍${data.section_title}` : ''
+        setFeedback({ type: 'success', message: `${data.message as string}${sectionLabel}` })
         addRecentScan({
           id: Date.now().toString(),
           status: data.status as 'HADIR' | 'LATE',
@@ -206,10 +208,12 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
             first_name: (data.student as { first_name: string }).first_name,
             last_name: (data.student as { last_name: string }).last_name,
           } : null,
+          section_title: (data.section_title as string) ?? null,
         })
         incrementCount(data.status as 'HADIR' | 'LATE')
       } else if (data.warning) {
-        setFeedback({ type: 'warning', message: data.message as string })
+        const sectionLabel = data.section_title ? ` · 📍${data.section_title}` : ''
+        setFeedback({ type: 'warning', message: `${data.message as string}${sectionLabel}` })
       } else {
         setFeedback({ type: 'error', message: (data.error as string) ?? 'Terjadi kesalahan.' })
       }
@@ -365,7 +369,10 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
                 {scan.student ? (
                   <>
                     <p className="text-sm font-medium">{scan.student.last_name}, {scan.student.first_name}</p>
-                    <p className="text-xs text-gray-500">{scan.student.no_regis}</p>
+                    <p className="text-xs text-gray-500">
+                      {scan.student.no_regis}
+                      {scan.section_title && <span className="ml-1.5 text-blue-400">📍 {scan.section_title}</span>}
+                    </p>
                   </>
                 ) : <p className="text-sm text-gray-400">—</p>}
               </div>
