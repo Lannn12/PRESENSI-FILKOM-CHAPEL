@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, Download, Filter } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Loader2, Download, Filter, FileSpreadsheet, FileText, FileDown, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import type { Semester, Meeting, AttendanceStatus, EventType } from '@/lib/types'
@@ -37,6 +38,7 @@ export default function RekapPage() {
   const [filterType, setFilterType] = useState<'ALL' | EventType>('ALL')
   const [filterSearch, setFilterSearch] = useState('')
   const [exporting, setExporting] = useState(false)
+  const [savingCell, setSavingCell] = useState<string | null>(null) // "studentId__meetingId"
 
   useEffect(() => {
     supabase.from('semesters').select('*').eq('is_active', true).single()
@@ -87,28 +89,108 @@ export default function RekapPage() {
     !filterSearch || r.no_regis.toLowerCase().includes(filterSearch.toLowerCase()) || r.nama.toLowerCase().includes(filterSearch.toLowerCase()) || r.major.toLowerCase().includes(filterSearch.toLowerCase())
   )
 
-  async function handleExport() {
+  // Inline edit: update attendance status
+  async function updateAttendance(studentId: string, meetingId: string, newStatus: AttendanceStatus | 'HAPUS') {
+    const cellKey = `${studentId}__${meetingId}`
+    setSavingCell(cellKey)
+    try {
+      if (newStatus === 'HAPUS') {
+        const { error } = await supabase
+          .from('attendances')
+          .delete()
+          .eq('student_id', studentId)
+          .eq('meeting_id', meetingId)
+        if (error) throw error
+        setPivotRows(prev => prev.map(r =>
+          r.student_id === studentId ? { ...r, [meetingId]: '—' } : r
+        ))
+        toast.success('Status dihapus')
+      } else {
+        // Upsert: try update first, if no rows updated then insert
+        const { data: existing } = await supabase
+          .from('attendances')
+          .select('id')
+          .eq('student_id', studentId)
+          .eq('meeting_id', meetingId)
+          .single()
+
+        if (existing) {
+          const { error } = await supabase
+            .from('attendances')
+            .update({ status: newStatus })
+            .eq('student_id', studentId)
+            .eq('meeting_id', meetingId)
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('attendances')
+            .insert({ student_id: studentId, meeting_id: meetingId, status: newStatus })
+          if (error) throw error
+        }
+
+        setPivotRows(prev => prev.map(r =>
+          r.student_id === studentId ? { ...r, [meetingId]: newStatus } : r
+        ))
+        toast.success(`Status diubah ke ${STATUS_LABELS[newStatus]}`)
+      }
+    } catch (e: unknown) {
+      toast.error('Gagal update: ' + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setSavingCell(null)
+    }
+  }
+
+  // Export helpers
+  function getExportData() {
+    const headers = ['No. Reg', 'Nama', 'Prodi', ...meetings.map(m => `${m.nama_event} (${m.tanggal})`)]
+    const rows = displayRows.map(r => [
+      r.no_regis,
+      r.nama,
+      r.major,
+      ...meetings.map(m => {
+        const val = r[m.id]
+        return val === 'HADIR' ? 'H' : val === 'LATE' ? 'L' : val === 'TIDAK_HADIR' ? 'X' : ''
+      }),
+    ])
+    return { headers, rows }
+  }
+
+  function getFileName(ext: string) {
+    return `Rekap_Presensi_${activeSemester?.nama ?? 'export'}_${new Date().toISOString().slice(0, 10)}.${ext}`
+  }
+
+  async function handleExport(format: 'xlsx' | 'csv' | 'pdf') {
     setExporting(true)
     try {
-      const headers = ['No. Reg', 'Nama', 'Prodi', ...meetings.map(m => `${m.nama_event}\n${m.tanggal}`)]
-      const rows = displayRows.map(r => [
-        r.no_regis,
-        r.nama,
-        r.major,
-        ...meetings.map(m => {
-          const val = r[m.id]
-          return val === 'HADIR' ? 'H' : val === 'LATE' ? 'L' : val === 'TIDAK_HADIR' ? 'X' : ''
-        }),
-      ])
+      const { headers, rows } = getExportData()
 
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
-      // Column widths
-      ws['!cols'] = [{ wch: 14 }, { wch: 28 }, { wch: 20 }, ...meetings.map(() => ({ wch: 14 }))]
-
-      const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi')
-      XLSX.writeFile(wb, `Rekap_Presensi_${activeSemester?.nama ?? 'export'}_${new Date().toISOString().slice(0, 10)}.xlsx`)
-      toast.success('File Excel berhasil diexport!')
+      if (format === 'xlsx' || format === 'csv') {
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
+        ws['!cols'] = [{ wch: 14 }, { wch: 28 }, { wch: 20 }, ...meetings.map(() => ({ wch: 14 }))]
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi')
+        XLSX.writeFile(wb, getFileName(format), { bookType: format })
+        toast.success(`File ${format.toUpperCase()} berhasil diexport!`)
+      } else if (format === 'pdf') {
+        const { default: jsPDF } = await import('jspdf')
+        const autoTable = (await import('jspdf-autotable')).default
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+        doc.setFontSize(12)
+        doc.text(`Rekap Presensi — ${activeSemester?.nama ?? ''}`, 14, 15)
+        doc.setFontSize(8)
+        doc.text(`Diekspor: ${new Date().toLocaleDateString('id-ID')}`, 14, 20)
+        autoTable(doc, {
+          head: [headers],
+          body: rows,
+          startY: 24,
+          styles: { fontSize: 6, cellPadding: 1.5 },
+          headStyles: { fillColor: [59, 130, 246], fontSize: 6 },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 25 } },
+        })
+        doc.save(getFileName('pdf'))
+        toast.success('File PDF berhasil diexport!')
+      }
     } catch {
       toast.error('Gagal export.')
     }
@@ -131,10 +213,27 @@ export default function RekapPage() {
           <h1 className="text-2xl font-bold">Rekap & Export</h1>
           <p className="text-sm text-muted-foreground">Rekap presensi semua mahasiswa per event</p>
         </div>
-        <Button onClick={handleExport} disabled={exporting || !meetings.length}>
-          {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}
-          Export Excel
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            disabled={exporting || !meetings.length}
+            className="inline-flex items-center justify-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+          >
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Export
+            <ChevronDown className="h-3.5 w-3.5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />Excel (.xlsx)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('csv')}>
+              <FileText className="h-4 w-4 mr-2" />CSV (.csv)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('pdf')}>
+              <FileDown className="h-4 w-4 mr-2" />PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Filters */}
@@ -192,14 +291,43 @@ export default function RekapPage() {
                       {meetings.map(m => {
                         const val = row[m.id] as string
                         const status = val as AttendanceStatus
+                        const cellKey = `${row.student_id}__${m.id}`
+                        const isSaving = savingCell === cellKey
                         return (
-                          <td key={m.id} className="px-2 py-1.5 text-center">
-                            {val && val !== '—' ? (
-                              <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${STATUS_BG[status]}`}>
-                                {val === 'HADIR' ? 'H' : val === 'LATE' ? 'L' : 'X'}
-                              </span>
+                          <td key={m.id} className="px-1 py-1 text-center">
+                            {isSaving ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto text-muted-foreground" />
                             ) : (
-                              <span className="text-gray-300 text-xs">—</span>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger
+                                  className="rounded px-1.5 py-0.5 text-xs font-medium cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                  title="Klik untuk edit status"
+                                >
+                                    {val && val !== '—' ? (
+                                      <span className={`inline-block rounded px-1.5 py-0.5 ${STATUS_BG[status]}`}>
+                                        {val === 'HADIR' ? 'H' : val === 'LATE' ? 'L' : 'X'}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-300 text-xs hover:text-gray-500">—</span>
+                                    )}
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="center" className="min-w-28">
+                                  <DropdownMenuItem onClick={() => updateAttendance(row.student_id, m.id, 'HADIR')} disabled={val === 'HADIR'}>
+                                    <span className="inline-block rounded px-1.5 py-0.5 bg-green-100 text-green-800 text-xs font-medium mr-2">H</span> Hadir
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => updateAttendance(row.student_id, m.id, 'LATE')} disabled={val === 'LATE'}>
+                                    <span className="inline-block rounded px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-medium mr-2">L</span> Late
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => updateAttendance(row.student_id, m.id, 'TIDAK_HADIR')} disabled={val === 'TIDAK_HADIR'}>
+                                    <span className="inline-block rounded px-1.5 py-0.5 bg-red-100 text-red-800 text-xs font-medium mr-2">X</span> Tidak Hadir
+                                  </DropdownMenuItem>
+                                  {val && val !== '—' && (
+                                    <DropdownMenuItem onClick={() => updateAttendance(row.student_id, m.id, 'HAPUS')} className="text-muted-foreground">
+                                      <span className="mr-2">🗑</span> Hapus
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             )}
                           </td>
                         )
