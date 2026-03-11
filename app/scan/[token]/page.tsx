@@ -61,12 +61,28 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
 
   // Load meeting info
   const loadMeeting = useCallback(async () => {
-    const res = await fetch(`/api/scan?token=${encodeURIComponent(token)}`)
-    const data = await res.json()
-    if (!res.ok) { setInitError(data.error); setLoadingInit(false); return }
-    setMeeting(data.meeting)
-    setRecentScans(data.recent)
-    setLoadingInit(false)
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10000)
+      const res = await fetch(`/api/scan?token=${encodeURIComponent(token)}`, { signal: controller.signal })
+      clearTimeout(timeout)
+      let data: Record<string, unknown>
+      try { data = await res.json() } catch { data = {} }
+      if (!res.ok) {
+        setInitError((data.error as string) ?? `Server error (${res.status}). Cek env var Supabase di Vercel.`)
+        setLoadingInit(false)
+        return
+      }
+      setMeeting(data.meeting as MeetingInfo)
+      setRecentScans((data.recent as RecentScan[]) ?? [])
+      setLoadingInit(false)
+    } catch (err: unknown) {
+      const msg = err instanceof Error && err.name === 'AbortError'
+        ? 'Request timeout — server tidak merespons. Cek env var di Vercel.'
+        : (err instanceof Error ? err.message : 'Gagal memuat data event.')
+      setInitError(msg)
+      setLoadingInit(false)
+    }
   }, [token])
 
   useEffect(() => { loadMeeting() }, [loadMeeting])
@@ -145,31 +161,38 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
     submittingRef.current = true
     setSubmitting(true)
 
-    const res = await fetch('/api/scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: tokenRef.current, no_regis: nim.trim(), is_late: isLateRef.current }),
-    })
-    const data = await res.json()
-    submittingRef.current = false
-    setSubmitting(false)
-
-    if (data.success) {
-      setFeedback({ type: 'success', message: data.message })
-      addRecentScan({
-        id: Date.now().toString(),
-        status: data.status,
-        waktu_scan: new Date().toISOString(),
-        student: data.student ? {
-          no_regis: data.student.no_regis,
-          first_name: data.student.first_name,
-          last_name: data.student.last_name,
-        } : null,
+    try {
+      const res = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: tokenRef.current, no_regis: nim.trim(), is_late: isLateRef.current }),
       })
-    } else if (data.warning) {
-      setFeedback({ type: 'warning', message: data.message })
-    } else {
-      setFeedback({ type: 'error', message: data.error ?? 'Terjadi kesalahan.' })
+      let data: Record<string, unknown>
+      try { data = await res.json() } catch { data = {} }
+      submittingRef.current = false
+      setSubmitting(false)
+
+      if (data.success) {
+        setFeedback({ type: 'success', message: data.message as string })
+        addRecentScan({
+          id: Date.now().toString(),
+          status: data.status as 'HADIR' | 'LATE',
+          waktu_scan: new Date().toISOString(),
+          student: data.student ? {
+            no_regis: (data.student as { no_regis: string }).no_regis,
+            first_name: (data.student as { first_name: string }).first_name,
+            last_name: (data.student as { last_name: string }).last_name,
+          } : null,
+        })
+      } else if (data.warning) {
+        setFeedback({ type: 'warning', message: data.message as string })
+      } else {
+        setFeedback({ type: 'error', message: (data.error as string) ?? 'Terjadi kesalahan.' })
+      }
+    } catch {
+      submittingRef.current = false
+      setSubmitting(false)
+      setFeedback({ type: 'error', message: 'Gagal mengirim — cek koneksi internet.' })
     }
   // Stable: only addRecentScan (which is also stable)
   }, [addRecentScan])
