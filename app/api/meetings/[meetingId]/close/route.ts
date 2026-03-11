@@ -7,12 +7,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mee
     const supabase = await createServiceClient()
 
     // Verify meeting exists
-    const { data: meeting, error: meetErr } = await supabase.from('meetings').select('id, status, semester_id').eq('id', meetingId).single()
+    const { data: meeting, error: meetErr } = await supabase.from('meetings').select('id, status, semester_id, absenter_group_id').eq('id', meetingId).single()
     if (meetErr || !meeting) return NextResponse.json({ error: 'Meeting not found.' }, { status: 404 })
     if (meeting.status === 'DITUTUP') return NextResponse.json({ error: 'Event sudah ditutup.' }, { status: 400 })
 
-    // Get all students for the semester
-    const { data: students } = await supabase.from('students').select('id')
+    // Get relevant students: by absenter group if set, else by semester (student_sections)
+    let studentIds: string[] = []
+    if (meeting.absenter_group_id) {
+      const { data: members } = await supabase
+        .from('absenter_group_members')
+        .select('student_id')
+        .eq('group_id', meeting.absenter_group_id)
+      studentIds = (members ?? []).map((m: { student_id: string }) => m.student_id)
+    } else {
+      const { data: sections } = await supabase
+        .from('student_sections')
+        .select('student_id')
+        .eq('semester_id', meeting.semester_id)
+      if (sections && sections.length > 0) {
+        studentIds = sections.map((s: { student_id: string }) => s.student_id)
+      } else {
+        // Fallback: all students in DB
+        const { data: all } = await supabase.from('students').select('id')
+        studentIds = (all ?? []).map((s: { id: string }) => s.id)
+      }
+    }
+    const students = studentIds.map(id => ({ id }))
     // Get already attended students
     const { data: attended } = await supabase.from('attendances').select('student_id').eq('meeting_id', meetingId)
     const attendedIds = new Set((attended ?? []).map(a => a.student_id))
