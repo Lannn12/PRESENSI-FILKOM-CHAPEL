@@ -96,9 +96,8 @@ export default function PertemuanPage() {
   }
 
   function getScannerUrl(token: string) {
-    // Prioritas: env var → window.location.origin (otomatis benar di Vercel maupun lokal)
-    const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ||
-      (typeof window !== 'undefined' ? window.location.origin : '')
+    // Selalu gunakan window.location.origin agar URL benar di Vercel maupun lokal
+    const base = typeof window !== 'undefined' ? window.location.origin : ''
     return `${base}/scan/${token}`
   }
 
