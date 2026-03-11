@@ -11,10 +11,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import {
-  Users, CalendarDays, TrendingUp, Search, Loader2,
+  Users, CalendarDays, TrendingUp, Loader2,
 } from 'lucide-react'
-import type { Meeting, Attendance, EventType, AttendanceStatus } from '@/lib/types'
-import { EVENT_TYPE_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/lib/types'
+import type { Meeting, EventType } from '@/lib/types'
+import { EVENT_TYPE_LABELS } from '@/lib/types'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 interface ChartData {
@@ -41,10 +41,6 @@ export default function DashboardPage() {
   const [chartData, setChartData] = useState<ChartData[]>([])
   const [chartFilter, setChartFilter] = useState<'ALL' | EventType>('ALL')
   const [loadingChart, setLoadingChart] = useState(true)
-
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResult, setSearchResult] = useState<{ student: { no_regis: string; first_name: string; last_name: string; major: string } | null; attendances: (Attendance & { meeting: Meeting })[] } | null>(null)
-  const [searching, setSearching] = useState(false)
 
   const [absentThreshold, setAbsentThreshold] = useState('')
   const [absentRows, setAbsentRows] = useState<StudentAbsentRow[]>([])
@@ -104,22 +100,6 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchStats() }, [fetchStats])
   useEffect(() => { fetchChartData() }, [fetchChartData])
-
-  // Search student attendance
-  async function handleSearch() {
-    if (!searchQuery.trim()) return
-    setSearching(true)
-    const { data: student } = await supabase.from('students').select('no_regis, first_name, last_name, major').or(`no_regis.eq.${searchQuery.trim()},first_name.ilike.%${searchQuery.trim()}%,last_name.ilike.%${searchQuery.trim()}%`).limit(1).single()
-    if (!student) { setSearchResult({ student: null, attendances: [] }); setSearching(false); return }
-    const { data: attendances } = await supabase.from('attendances').select('*, meeting:meetings(*)').eq('student_id', (await supabase.from('students').select('id').eq('no_regis', student.no_regis).single()).data?.id ?? '').order('created_at', { ascending: false })
-    setSearchResult({ student, attendances: (attendances ?? []) as any })
-    setSearching(false)
-  }
-
-  async function handleUpdateAttendance(attendanceId: string, newStatus: AttendanceStatus) {
-    await supabase.from('attendances').update({ status: newStatus }).eq('id', attendanceId)
-    if (searchResult?.student) handleSearch()
-  }
 
   // Absent more than
   async function handleAbsentFilter() {
@@ -251,72 +231,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Search & Edit Attendance */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Cari & Edit Kehadiran Mahasiswa</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex gap-2">
-              <Input
-                placeholder="No. Reg atau nama mahasiswa..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <Button onClick={handleSearch} disabled={searching} size="icon">
-                {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              </Button>
-            </div>
-            {searchResult && !searchResult.student && (
-              <p className="text-sm text-red-500">Mahasiswa tidak ditemukan.</p>
-            )}
-            {searchResult?.student && (
-              <div className="space-y-2">
-                <div className="p-2 bg-muted rounded-md text-sm">
-                  <span className="font-semibold">{searchResult.student.last_name}, {searchResult.student.first_name}</span>
-                  <span className="text-muted-foreground ml-2">— {searchResult.student.no_regis} · {searchResult.student.major}</span>
-                </div>
-                <div className="max-h-52 overflow-y-auto rounded border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs">Event</TableHead>
-                        <TableHead className="text-xs">Tanggal</TableHead>
-                        <TableHead className="text-xs">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {searchResult.attendances.length === 0 && (
-                        <TableRow><TableCell colSpan={3} className="text-center text-xs text-muted-foreground py-4">Belum ada data</TableCell></TableRow>
-                      )}
-                      {searchResult.attendances.map((a) => (
-                        <TableRow key={a.id}>
-                          <TableCell className="text-xs py-1.5">{(a as any).meeting?.nama_event ?? '-'}</TableCell>
-                          <TableCell className="text-xs py-1.5">{(a as any).meeting?.tanggal ?? '-'}</TableCell>
-                          <TableCell className="py-1.5">
-                            <Select value={a.status} onValueChange={(v) => handleUpdateAttendance(a.id, v as AttendanceStatus)}>
-                              <SelectTrigger className={`h-6 text-xs px-2 rounded-full border-0 ${STATUS_COLORS[a.status]}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {(['HADIR', 'LATE', 'TIDAK_HADIR'] as AttendanceStatus[]).map((s) => (
-                                  <SelectItem key={s} value={s} className="text-xs">{STATUS_LABELS[s]}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
+      <div className="grid md:grid-cols-1 gap-6">
         {/* Absent More Than */}
         <Card>
           <CardHeader className="pb-3">
