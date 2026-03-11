@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import type { Student, AbsenterGroup, Semester } from '@/lib/types'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE_OPTIONS = [20, 50, 100, 500, 1000]
 
 export default function MahasiswaPage() {
   const supabase = createClient()
@@ -63,6 +63,7 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
   const [students, setStudents] = useState<Student[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(50)
   const [searchQ, setSearchQ] = useState('')
   const [debouncedQ, setDebouncedQ] = useState('')
   const [loading, setLoading] = useState(true)
@@ -82,11 +83,11 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
     if (debouncedQ) {
       query = query.or(`no_regis.ilike.%${debouncedQ}%,first_name.ilike.%${debouncedQ}%,last_name.ilike.%${debouncedQ}%`)
     }
-    const { data, count } = await query.order('last_name').range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+    const { data, count } = await query.order('last_name').range(page * pageSize, (page + 1) * pageSize - 1)
     setStudents(data ?? [])
     setTotalCount(count ?? 0)
     setLoading(false)
-  }, [supabase, debouncedQ, page])
+  }, [supabase, debouncedQ, page, pageSize])
 
   useEffect(() => { fetchStudents() }, [fetchStudents])
 
@@ -190,7 +191,7 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
     fetchStudents()
   }
 
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   return (
     <Card>
@@ -209,9 +210,21 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-8" placeholder="Cari no. reg / nama..." value={searchQ} onChange={(e) => setSearchQ(e.target.value)} />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input className="pl-8" placeholder="Cari no. reg / nama..." value={searchQ} onChange={(e) => setSearchQ(e.target.value)} />
+          </div>
+          <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(0) }}>
+            <SelectTrigger className="w-28 shrink-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map(n => (
+                <SelectItem key={n} value={String(n)}>{n} / hal</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="rounded border overflow-hidden">
           <Table>
@@ -249,15 +262,16 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
             </TableBody>
           </Table>
         </div>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Halaman {page + 1} dari {totalPages}</span>
-            <div className="flex gap-1">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>Menampilkan {students.length} dari {totalCount} mahasiswa</span>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <span className="mr-1">Hal {page + 1}/{totalPages}</span>
               <Button variant="outline" size="icon" className="h-7 w-7" disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-3.5 w-3.5" /></Button>
               <Button variant="outline" size="icon" className="h-7 w-7" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-3.5 w-3.5" /></Button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
 
       {/* Delete Confirmation */}
