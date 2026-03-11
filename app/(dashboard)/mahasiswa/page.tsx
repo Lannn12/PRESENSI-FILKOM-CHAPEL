@@ -98,8 +98,19 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
     setUploading(true)
 
     try {
-      const buffer = await file.arrayBuffer()
-      const wb = XLSX.read(buffer)
+      // Auto-detect delimiter CSV (support , dan ;)
+      let wb: ReturnType<typeof XLSX.read>
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        const text = await file.text()
+        const firstLine = text.split('\n')[0]
+        const semicolons = (firstLine.match(/;/g) || []).length
+        const commas = (firstLine.match(/,/g) || []).length
+        const FS = semicolons > commas ? ';' : ','
+        wb = XLSX.read(text, { type: 'string', FS })
+      } else {
+        const buffer = await file.arrayBuffer()
+        wb = XLSX.read(buffer)
+      }
       const sheet = wb.Sheets[wb.SheetNames[0]]
       const rows: Record<string, string>[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
 
@@ -112,32 +123,47 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
         return norm
       })
 
-      const valid = normalizedRows.filter((r) => r.no_regis && (r.name || r.nama || r.first_name || r.nama_depan))
+      // Accept: noreg ATAU no_regis
+      const valid = normalizedRows.filter((r) =>
+        (r.noreg || r.no_regis) && (r.name || r.nama || r.first_name || r.nama_depan)
+      )
       if (!valid.length) {
-        toast.error('Tidak ada baris valid. Pastikan kolom: no_regis, name, major, gender')
+        toast.error('Tidak ada baris valid. Pastikan kolom: noreg, name, major, gender')
         setUploading(false)
         return
       }
 
       const toUpsert = valid.map((r) => {
-        // Support single "name" column or legacy first_name + last_name
         let first_name = r.first_name || r.nama_depan || ''
         let last_name = r.last_name || r.nama_belakang || ''
+
         if (!first_name) {
           const fullName = (r.name || r.nama || '').trim()
-          const spaceIdx = fullName.lastIndexOf(' ')
-          if (spaceIdx > 0) {
-            first_name = fullName.substring(0, spaceIdx).trim()
-            last_name = fullName.substring(spaceIdx + 1).trim()
+          const commaIdx = fullName.indexOf(',')
+          if (commaIdx >= 0) {
+            // Format: "LastName, FirstName" (misal "Lobbu, Fiktor Retno" atau "-, Nafiza")
+            const ln = fullName.substring(0, commaIdx).trim()
+            const fn = fullName.substring(commaIdx + 1).trim()
+            last_name = (ln === '-' || ln === '') ? '-' : ln
+            first_name = fn || ln
           } else {
-            first_name = fullName
-            last_name = '-'
+            // Nama biasa: kata terakhir = last_name
+            const spaceIdx = fullName.lastIndexOf(' ')
+            if (spaceIdx > 0) {
+              first_name = fullName.substring(0, spaceIdx).trim()
+              last_name = fullName.substring(spaceIdx + 1).trim()
+            } else {
+              first_name = fullName
+              last_name = '-'
+            }
           }
         }
+        if (!last_name) last_name = '-'
+
         const genderRaw = (r.gender || r.jenis_kelamin || '').toLowerCase()
         const gender = genderRaw === 'female' || genderRaw === 'p' || genderRaw === 'perempuan' ? 'FEMALE' : 'MALE'
         return {
-          no_regis: r.no_regis,
+          no_regis: (r.noreg || r.no_regis).toUpperCase(),
           first_name,
           last_name,
           major: r.major || r.prodi || r.jurusan || '',
@@ -178,7 +204,7 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
             {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
             Import CSV/Excel
           </Button>
-          <p className="text-xs text-muted-foreground">Kolom: <code className="bg-muted px-1 rounded">no_regis, name, major, gender</code></p>
+          <p className="text-xs text-muted-foreground">Kolom: <code className="bg-muted px-1 rounded">noreg; name; major; gender</code> — name: <code className="bg-muted px-1 rounded">LastName, FirstName</code></p>
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileUpload} />
         </div>
       </CardHeader>
