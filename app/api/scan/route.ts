@@ -79,14 +79,32 @@ export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token')
   if (!token) return NextResponse.json({ error: 'Token required.' }, { status: 400 })
 
+  // Validate env vars — common cause of 404 on Vercel
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json(
+      { error: 'Konfigurasi server belum lengkap. Pastikan env var Supabase sudah diset di Vercel.' },
+      { status: 503 }
+    )
+  }
+
   const supabase = await createServiceClient()
-  const { data: meeting } = await supabase
+  const { data: meeting, error: meetErr } = await supabase
     .from('meetings')
     .select('id, nama_event, tanggal, start_time, end_time, status, event_type')
     .eq('scanner_token', token)
     .single()
 
-  if (!meeting) return NextResponse.json({ error: 'Event tidak ditemukan.' }, { status: 404 })
+  if (meetErr || !meeting) {
+    // Distinguish between "token not found" vs Supabase connection error
+    const isConnErr = meetErr && (meetErr.code === 'PGRST301' || meetErr.message?.includes('fetch'))
+    return NextResponse.json(
+      { error: isConnErr
+          ? 'Gagal konek ke database. Cek env var SUPABASE di Vercel.'
+          : 'Token scanner tidak valid atau event tidak ditemukan.'
+      },
+      { status: 404 }
+    )
+  }
 
   // Get recent scans
   const { data: recent } = await supabase

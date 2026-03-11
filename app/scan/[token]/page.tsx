@@ -208,10 +208,17 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   if (initError || !meeting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
-        <div className="text-center text-white space-y-2">
+        <div className="text-center text-white space-y-3 max-w-sm">
           <XCircle className="h-12 w-12 mx-auto text-red-400" />
           <p className="text-lg font-semibold">Halaman tidak ditemukan</p>
           <p className="text-sm text-gray-400">{initError ?? 'Token scanner tidak valid.'}</p>
+          <Button
+            variant="outline"
+            className="mt-2 text-white border-gray-600"
+            onClick={() => { setInitError(null); setLoadingInit(true); loadMeeting() }}
+          >
+            Coba Lagi
+          </Button>
         </div>
       </div>
     )
