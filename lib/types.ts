@@ -67,7 +67,7 @@ export interface Meeting {
   absenter_group_id: string | null
   tanggal: string
   start_time: string
-  end_time: string
+  end_time: string | null
   deskripsi: string | null
   scanner_token: string
   status: EventStatus

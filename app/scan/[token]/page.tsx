@@ -45,6 +45,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
 
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
+  const [counts, setCounts] = useState({ hadir: 0, late: 0 })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scannerRef = useRef<any>(null)
   const lastScannedRef = useRef<string>('')
@@ -57,6 +58,12 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   useEffect(() => { tokenRef.current = token }, [token])
   const addRecentScan = useCallback((scan: RecentScan) => {
     setRecentScans(prev => [scan, ...prev.slice(0, 29)])
+  }, [])
+  const incrementCount = useCallback((status: 'HADIR' | 'LATE') => {
+    setCounts(prev => ({
+      hadir: prev.hadir + (status === 'HADIR' ? 1 : 0),
+      late: prev.late + (status === 'LATE' ? 1 : 0),
+    }))
   }, [])
 
   // Load meeting info
@@ -75,6 +82,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       }
       setMeeting(data.meeting as MeetingInfo)
       setRecentScans((data.recent as RecentScan[]) ?? [])
+      setCounts((data.counts as { hadir: number; late: number }) ?? { hadir: 0, late: 0 })
       setLoadingInit(false)
     } catch (err: unknown) {
       const msg = err instanceof Error && err.name === 'AbortError'
@@ -103,6 +111,21 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
     }, 2500)
     return () => clearTimeout(t)
   }, [feedback, cameraActive])
+
+  // Poll meeting status & counts every 30s — detect if admin closes/activates the meeting
+  useEffect(() => {
+    if (loadingInit || initError) return
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/scan?token=${encodeURIComponent(token)}`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.meeting) setMeeting(data.meeting as MeetingInfo)
+        if (data.counts) setCounts(data.counts as { hadir: number; late: number })
+      } catch { /* silent — polling failure is non-critical */ }
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [token, loadingInit, initError])
 
   // Camera scanner lifecycle
   useEffect(() => {
@@ -184,6 +207,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
             last_name: (data.student as { last_name: string }).last_name,
           } : null,
         })
+        incrementCount(data.status as 'HADIR' | 'LATE')
       } else if (data.warning) {
         setFeedback({ type: 'warning', message: data.message as string })
       } else {
@@ -194,8 +218,8 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       setSubmitting(false)
       setFeedback({ type: 'error', message: 'Gagal mengirim — cek koneksi internet.' })
     }
-  // Stable: only addRecentScan (which is also stable)
-  }, [addRecentScan])
+  // Stable: only addRecentScan + incrementCount (both stable)
+  }, [addRecentScan, incrementCount])
 
   if (loadingInit) {
     return (
@@ -239,6 +263,11 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
             <Badge className={meeting.status === 'AKTIF' ? 'bg-green-600' : meeting.status === 'DRAFT' ? 'bg-gray-600' : 'bg-red-700'}>
               {meeting.status}
             </Badge>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <span className="text-xs bg-green-900/40 text-green-400 rounded-full px-2.5 py-0.5 font-semibold">{counts.hadir} Hadir</span>
+            <span className="text-xs bg-yellow-900/40 text-yellow-400 rounded-full px-2.5 py-0.5 font-semibold">{counts.late} Late</span>
+            <span className="text-xs bg-gray-700/60 text-gray-300 rounded-full px-2.5 py-0.5 font-semibold">{counts.hadir + counts.late} Total</span>
           </div>
         </div>
       </div>

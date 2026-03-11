@@ -24,11 +24,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Event berstatus ${meeting.status}. Presensi tidak dapat direkam.` }, { status: 403 })
     }
 
-    // Find student
+    // Find student — ensure no_regis is uppercased to match stored data
     const { data: student, error: studErr } = await supabase
       .from('students')
       .select('id, first_name, last_name, no_regis, major')
-      .eq('no_regis', no_regis.trim())
+      .eq('no_regis', no_regis.trim().toUpperCase())
       .single()
 
     if (studErr || !student) {
@@ -115,5 +115,15 @@ export async function GET(req: NextRequest) {
     .order('waktu_scan', { ascending: false })
     .limit(30)
 
-  return NextResponse.json({ meeting, recent: recent ?? [] })
+  // Get total counts for counter display
+  const [{ count: hadirCount }, { count: lateCount }] = await Promise.all([
+    supabase.from('attendances').select('id', { count: 'exact', head: true }).eq('meeting_id', meeting.id).eq('status', 'HADIR'),
+    supabase.from('attendances').select('id', { count: 'exact', head: true }).eq('meeting_id', meeting.id).eq('status', 'LATE'),
+  ])
+
+  return NextResponse.json({
+    meeting,
+    recent: recent ?? [],
+    counts: { hadir: hadirCount ?? 0, late: lateCount ?? 0 },
+  })
 }

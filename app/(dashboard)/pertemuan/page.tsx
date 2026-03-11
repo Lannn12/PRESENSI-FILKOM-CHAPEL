@@ -291,10 +291,13 @@ export default function PertemuanPage() {
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Hapus Event?</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Semua data presensi event ini akan ikut terhapus.</p>
+          <p className="text-sm text-muted-foreground">
+            Seluruh data presensi (HADIR, LATE, TIDAK_HADIR) yang sudah tercatat untuk event ini akan
+            <strong className="text-red-600"> ikut terhapus permanen</strong>. Tindakan ini tidak dapat dibatalkan.
+          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={handleDelete}>Hapus</Button>
+            <Button variant="destructive" onClick={handleDelete}>Hapus Permanen</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -89,7 +89,7 @@ create table public.meetings (
   absenter_group_id uuid references public.absenter_groups (id) on delete set null,
   tanggal date not null,
   start_time time not null,
-  end_time time not null,
+  end_time time,           -- nullable: some events don't have a fixed end time
   deskripsi text,
   scanner_token varchar not null unique default gen_random_uuid()::text,
   status varchar not null default 'DRAFT' check (status in ('DRAFT', 'AKTIF', 'DITUTUP')),

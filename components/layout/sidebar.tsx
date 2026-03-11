@@ -23,7 +23,7 @@ import { Separator } from '@/components/ui/separator'
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/semester', label: 'Semester', icon: GraduationCap },
-  { href: '/mahasiswa', label: 'Manage Students', icon: Users },
+  { href: '/mahasiswa', label: 'Kelola Mahasiswa', icon: Users },
   { href: '/seating', label: 'Seating', icon: Grid3X3 },
   { href: '/pertemuan', label: 'Events', icon: CalendarDays },
   { href: '/rekap', label: 'Rekap & Export', icon: BarChart3 },

@@ -30,6 +30,7 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
   const [loadingInit, setLoadingInit] = useState(true)
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [closing, setClosing] = useState(false)
+  const [totalEnrolled, setTotalEnrolled] = useState<number | null>(null)
 
   const fetchAttendances = useCallback(async () => {
     const { data } = await supabase.from('attendances').select('id, status, waktu_scan, student:students(no_regis, first_name, last_name, major)').eq('meeting_id', meetingId).in('status', ['HADIR', 'LATE']).order('waktu_scan', { ascending: false })
@@ -41,6 +42,15 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
       const { data: m } = await supabase.from('meetings').select('*').eq('id', meetingId).single()
       setMeeting(m)
       await fetchAttendances()
+      if (m) {
+        if (m.absenter_group_id) {
+          const { count } = await supabase.from('absenter_group_members').select('id', { count: 'exact', head: true }).eq('group_id', m.absenter_group_id)
+          setTotalEnrolled(count ?? null)
+        } else {
+          const { count } = await supabase.from('student_sections').select('id', { count: 'exact', head: true }).eq('semester_id', m.semester_id)
+          setTotalEnrolled(count ?? null)
+        }
+      }
       setLoadingInit(false)
     }
     init()
@@ -129,7 +139,7 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
           <Card>
             <CardContent className="py-3 text-center">
               <p className="text-3xl font-bold text-blue-600">{hadir + late}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="text-xs text-muted-foreground">{totalEnrolled !== null ? `dari ${totalEnrolled}` : 'Total'}</p>
             </CardContent>
           </Card>
         </div>
