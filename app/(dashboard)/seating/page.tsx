@@ -37,7 +37,7 @@ export default function SeatingPage() {
   const [loadingAssign, setLoadingAssign] = useState(false)
 
   // Counters 
-  const [genderCounts, setGenderCounts] = useState({ male: { assigned: 0, cap: 0 }, female: { assigned: 0, cap: 0 } })
+  const [genderCounts, setGenderCounts] = useState({ male: { assigned: 0, cap: 0, total: 0 }, female: { assigned: 0, cap: 0, total: 0 } })
 
   // Random assign
   const [randomizing, setRandomizing] = useState(false)
@@ -52,8 +52,12 @@ export default function SeatingPage() {
   const fetchSections = useCallback(async () => {
     if (!activeSemester) return
     setLoading(true)
-    const { data: secs } = await supabase.from('sections').select('*').eq('semester_id', activeSemester.id).order('order')
-    const { data: assigns } = await supabase.from('student_sections').select('section_id, student:students(gender)').eq('semester_id', activeSemester.id)
+    const [{ data: secs }, { data: assigns }, { count: maleTotal }, { count: femaleTotal }] = await Promise.all([
+      supabase.from('sections').select('*').eq('semester_id', activeSemester.id).order('order'),
+      supabase.from('student_sections').select('section_id, student:students(gender)').eq('semester_id', activeSemester.id),
+      supabase.from('students').select('id', { count: 'exact', head: true }).eq('gender', 'MALE'),
+      supabase.from('students').select('id', { count: 'exact', head: true }).eq('gender', 'FEMALE'),
+    ])
     setSections(secs ?? [])
 
     // Compute counters
@@ -61,7 +65,10 @@ export default function SeatingPage() {
     const femaleCap = (secs ?? []).filter(s => s.gender === 'FEMALE').reduce((a, s) => a + s.capacity, 0)
     const maleAss = (assigns ?? []).filter((a: any) => a.student?.gender === 'MALE').length
     const femaleAss = (assigns ?? []).filter((a: any) => a.student?.gender === 'FEMALE').length
-    setGenderCounts({ male: { assigned: maleAss, cap: maleCap }, female: { assigned: femaleAss, cap: femaleCap } })
+    setGenderCounts({
+      male: { assigned: maleAss, cap: maleCap, total: maleTotal ?? 0 },
+      female: { assigned: femaleAss, cap: femaleCap, total: femaleTotal ?? 0 },
+    })
     setLoading(false)
   }, [supabase, activeSemester])
 
@@ -239,9 +246,21 @@ export default function SeatingPage() {
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardContent className="py-3 flex items-center justify-between">
-            <span className="text-blue-600 font-semibold">♂ Male</span>
+            <div>
+              <span className="text-blue-600 font-semibold">♂ Laki-laki</span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {genderCounts.male.assigned} sudah ·{' '}
+                <span className={genderCounts.male.total - genderCounts.male.assigned > 0 ? 'text-orange-500 font-medium' : 'text-green-600 font-medium'}>
+                  {genderCounts.male.total - genderCounts.male.assigned} belum
+                </span>
+                {' '}· total {genderCounts.male.total}
+              </p>
+            </div>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold">{genderCounts.male.assigned}/{genderCounts.male.cap}</span>
+              <div className="text-right">
+                <p className="text-xl font-bold leading-none">{genderCounts.male.assigned}<span className="text-sm font-normal text-muted-foreground">/{genderCounts.male.total}</span></p>
+                <p className="text-[10px] text-muted-foreground">kapasitas {genderCounts.male.cap}</p>
+              </div>
               <Button
                 size="sm" variant="outline"
                 className="h-7 px-2 text-xs"
@@ -256,9 +275,21 @@ export default function SeatingPage() {
         </Card>
         <Card>
           <CardContent className="py-3 flex items-center justify-between">
-            <span className="text-pink-600 font-semibold">♀ Female</span>
+            <div>
+              <span className="text-pink-600 font-semibold">♀ Perempuan</span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {genderCounts.female.assigned} sudah ·{' '}
+                <span className={genderCounts.female.total - genderCounts.female.assigned > 0 ? 'text-orange-500 font-medium' : 'text-green-600 font-medium'}>
+                  {genderCounts.female.total - genderCounts.female.assigned} belum
+                </span>
+                {' '}· total {genderCounts.female.total}
+              </p>
+            </div>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold">{genderCounts.female.assigned}/{genderCounts.female.cap}</span>
+              <div className="text-right">
+                <p className="text-xl font-bold leading-none">{genderCounts.female.assigned}<span className="text-sm font-normal text-muted-foreground">/{genderCounts.female.total}</span></p>
+                <p className="text-[10px] text-muted-foreground">kapasitas {genderCounts.female.cap}</p>
+              </div>
               <Button
                 size="sm" variant="outline"
                 className="h-7 px-2 text-xs"
