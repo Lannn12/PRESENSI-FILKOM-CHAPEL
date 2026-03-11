@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, Loader2, Users, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Trash2, Loader2, Users, ArrowUp, ArrowDown, Shuffle } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Section, Student, Semester } from '@/lib/types'
 
@@ -38,6 +38,11 @@ export default function SeatingPage() {
 
   // Counters 
   const [genderCounts, setGenderCounts] = useState({ male: { assigned: 0, cap: 0 }, female: { assigned: 0, cap: 0 } })
+
+  // Random assign
+  const [randomizing, setRandomizing] = useState(false)
+  const [showRandomConfirm, setShowRandomConfirm] = useState(false)
+  const [randomGender, setRandomGender] = useState<'MALE' | 'FEMALE' | null>(null)
 
   useEffect(() => {
     supabase.from('semesters').select('*').eq('is_active', true).single()
@@ -81,6 +86,77 @@ export default function SeatingPage() {
       fetchSections()
     }
     setSaving(false)
+  }
+
+  async function handleRandomAssign() {
+    if (!randomGender || !activeSemester) return
+    setRandomizing(true)
+    setShowRandomConfirm(false)
+    try {
+      // 1. Fetch all students of this gender
+      const { data: studs, error: studsErr } = await supabase
+        .from('students').select('id').eq('gender', randomGender)
+      if (studsErr || !studs) throw new Error(studsErr?.message ?? 'Gagal ambil data mahasiswa')
+
+      // 2. Fisher-Yates shuffle
+      const arr = [...studs]
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]]
+      }
+
+      // 3. Sections for this gender, sorted by order
+      const targetSections = sections
+        .filter(s => s.gender === randomGender)
+        .sort((a, b) => a.order - b.order)
+
+      if (targetSections.length === 0) {
+        toast.error('Tidak ada section untuk gender ini.')
+        return
+      }
+
+      // 4. Delete all existing assignments for these sections
+      const sectionIds = targetSections.map(s => s.id)
+      const { error: delErr } = await supabase
+        .from('student_sections')
+        .delete()
+        .eq('semester_id', activeSemester.id)
+        .in('section_id', sectionIds)
+      if (delErr) throw new Error(delErr.message)
+
+      // 5. Distribute evenly: fill section[0] to capacity, then section[1], etc.
+      const inserts: { semester_id: string; student_id: string; section_id: string }[] = []
+      let studentIdx = 0
+      for (const sec of targetSections) {
+        for (let i = 0; i < sec.capacity && studentIdx < arr.length; i++, studentIdx++) {
+          inserts.push({
+            semester_id: activeSemester.id,
+            student_id: arr[studentIdx].id,
+            section_id: sec.id,
+          })
+        }
+      }
+
+      if (inserts.length > 0) {
+        const { error: insErr } = await supabase.from('student_sections').insert(inserts)
+        if (insErr) throw new Error(insErr.message)
+      }
+
+      const skipped = arr.length - inserts.length
+      toast.success(
+        `${inserts.length} mahasiswa berhasil diacak ke ${targetSections.length} section.` +
+        (skipped > 0 ? ` (${skipped} tidak di-assign karena kapasitas penuh)` : '')
+      )
+      fetchSections()
+      // Refresh assignment panel if open and matching gender
+      if (assignSection && assignSection.gender === randomGender) {
+        openAssign(assignSection)
+      }
+    } catch (e: unknown) {
+      toast.error('Gagal random assign: ' + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setRandomizing(false)
+    }
   }
 
   async function handleDelete() {
@@ -164,13 +240,35 @@ export default function SeatingPage() {
         <Card>
           <CardContent className="py-3 flex items-center justify-between">
             <span className="text-blue-600 font-semibold">♂ Male</span>
-            <span className="text-xl font-bold">{genderCounts.male.assigned}/{genderCounts.male.cap}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold">{genderCounts.male.assigned}/{genderCounts.male.cap}</span>
+              <Button
+                size="sm" variant="outline"
+                className="h-7 px-2 text-xs"
+                disabled={randomizing || maleSections.length === 0}
+                onClick={() => { setRandomGender('MALE'); setShowRandomConfirm(true) }}
+              >
+                {randomizing && randomGender === 'MALE' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shuffle className="h-3 w-3" />}
+                <span className="ml-1">Acak</span>
+              </Button>
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3 flex items-center justify-between">
             <span className="text-pink-600 font-semibold">♀ Female</span>
-            <span className="text-xl font-bold">{genderCounts.female.assigned}/{genderCounts.female.cap}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold">{genderCounts.female.assigned}/{genderCounts.female.cap}</span>
+              <Button
+                size="sm" variant="outline"
+                className="h-7 px-2 text-xs"
+                disabled={randomizing || femaleSections.length === 0}
+                onClick={() => { setRandomGender('FEMALE'); setShowRandomConfirm(true) }}
+              >
+                {randomizing && randomGender === 'FEMALE' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shuffle className="h-3 w-3" />}
+                <span className="ml-1">Acak</span>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -267,6 +365,29 @@ export default function SeatingPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>Batal</Button>
             <Button variant="destructive" onClick={handleDelete}>Hapus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Random assign confirm */}
+      <Dialog open={showRandomConfirm} onOpenChange={v => { if (!v) { setShowRandomConfirm(false); setRandomGender(null) } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shuffle className="h-5 w-5" />
+              Acak Seating {randomGender === 'MALE' ? 'Laki-laki' : 'Perempuan'}?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>Seluruh assignment mahasiswa <strong>{randomGender === 'MALE' ? 'laki-laki' : 'perempuan'}</strong> yang sudah ada akan <strong>di-reset</strong>, kemudian seluruh mahasiswa {randomGender === 'MALE' ? 'laki-laki' : 'perempuan'} akan diacak dan didistribusikan ulang ke section secara merata sesuai kapasitas.</p>
+            <p className="text-yellow-600 font-medium">Tindakan ini tidak dapat dibatalkan.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowRandomConfirm(false); setRandomGender(null) }}>Batal</Button>
+            <Button onClick={handleRandomAssign} disabled={randomizing}>
+              {randomizing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Shuffle className="h-4 w-4 mr-1" />}
+              Lanjutkan
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
