@@ -293,7 +293,7 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
 
 function AbsenterTab({ activeSemester }: { activeSemester: Semester | null }) {
   const supabase = createClient()
-  const [groups, setGroups] = useState<AbsenterGroup[]>([])
+  const [groups, setGroups] = useState<(AbsenterGroup & { member_count: number })[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedGroup, setSelectedGroup] = useState<AbsenterGroup | null>(null)
   const [members, setMembers] = useState<Student[]>([])
@@ -311,7 +311,13 @@ function AbsenterTab({ activeSemester }: { activeSemester: Semester | null }) {
   const fetchGroups = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('absenter_groups').select('*').eq('semester_id', activeSemester?.id ?? '').order('nama_group')
-    setGroups(data ?? [])
+    const groupsWithCount = await Promise.all(
+      (data ?? []).map(async (g) => {
+        const { count } = await supabase.from('absenter_group_members').select('id', { count: 'exact', head: true }).eq('group_id', g.id)
+        return { ...g, member_count: count ?? 0 }
+      })
+    )
+    setGroups(groupsWithCount)
     setLoading(false)
   }, [supabase, activeSemester])
 
@@ -394,6 +400,9 @@ function AbsenterTab({ activeSemester }: { activeSemester: Semester | null }) {
                   <div>
                     <p className="text-sm font-medium">{g.nama_group}</p>
                     {g.deskripsi && <p className="text-xs text-muted-foreground">{g.deskripsi}</p>}
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1 ${g.member_count > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {g.member_count} anggota
+                    </span>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 shrink-0" onClick={(e) => { e.stopPropagation(); handleDeleteGroup(g.id) }}>
                     <Trash2 className="h-3.5 w-3.5" />
