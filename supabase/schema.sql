@@ -92,6 +92,7 @@ create table public.meetings (
   end_time time,           -- nullable: some events don't have a fixed end time
   deskripsi text,
   scanner_token varchar not null unique default gen_random_uuid()::text,
+  scanner_pin varchar(6),  -- 6-digit PIN for absenter authentication
   status varchar not null default 'DRAFT' check (status in ('DRAFT', 'AKTIF', 'DITUTUP')),
   created_at timestamptz not null default now()
 );

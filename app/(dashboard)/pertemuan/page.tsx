@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, Loader2, Link2, QrCode, Eye, Trash2, ExternalLink } from 'lucide-react'
+import { Plus, Loader2, Link2, QrCode, Eye, Trash2, ExternalLink, KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { QRCodeSVG as QRCode } from 'qrcode.react'
 import type { Meeting, AbsenterGroup, Semester, EventType, EventStatus } from '@/lib/types'
@@ -80,7 +80,15 @@ export default function PertemuanPage() {
   }
 
   async function handleStatusChange(meetingId: string, newStatus: EventStatus) {
-    const { error } = await supabase.from('meetings').update({ status: newStatus }).eq('id', meetingId)
+    // Auto-generate 6-digit PIN when activating
+    const updateData: Record<string, unknown> = { status: newStatus }
+    if (newStatus === 'AKTIF') {
+      const pin = String(Math.floor(100000 + Math.random() * 900000))
+      updateData.scanner_pin = pin
+    } else if (newStatus === 'DRAFT') {
+      updateData.scanner_pin = null
+    }
+    const { error } = await supabase.from('meetings').update(updateData).eq('id', meetingId)
     if (error) { toast.error('Gagal update status: ' + error.message); return }
     toast.success('Status diperbarui')
     fetchAll()
@@ -176,13 +184,25 @@ export default function PertemuanPage() {
                         </Select>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 items-center">
                           <Button variant="outline" size="icon" className="h-7 w-7" title="Salin link" onClick={() => copyLink(m.scanner_token)}>
                             <Link2 className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="outline" size="icon" className="h-7 w-7" title="QR Code" onClick={() => setQrMeeting(m)}>
                             <QrCode className="h-3.5 w-3.5" />
                           </Button>
+                          {m.status === 'AKTIF' && m.scanner_pin && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs font-mono gap-1"
+                              title="Salin PIN absenter"
+                              onClick={() => { navigator.clipboard.writeText(m.scanner_pin!); toast.success(`PIN ${m.scanner_pin} disalin!`) }}
+                            >
+                              <KeyRound className="h-3 w-3" />
+                              {m.scanner_pin}
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -273,6 +293,13 @@ export default function PertemuanPage() {
               <div className="bg-muted rounded p-2 text-xs font-mono break-all text-left">
                 {typeof window !== 'undefined' ? getScannerUrl(qrMeeting.scanner_token) : `/scan/${qrMeeting.scanner_token}`}
               </div>
+              {qrMeeting.scanner_pin && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
+                  <p className="text-xs text-blue-600 font-medium">PIN Absenter</p>
+                  <p className="text-2xl font-mono font-bold tracking-[0.3em] text-blue-800">{qrMeeting.scanner_pin}</p>
+                  <p className="text-xs text-blue-500">Berikan PIN ini kepada absenter CSSA</p>
+                </div>
+              )}
               <div className="flex gap-2 justify-center">
                 <Button variant="outline" size="sm" onClick={() => copyLink(qrMeeting.scanner_token)}>
                   <Link2 className="h-3.5 w-3.5 mr-1" />Salin Link

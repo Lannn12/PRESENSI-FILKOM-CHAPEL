@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { CheckCircle2, XCircle, AlertCircle, Loader2, Clock, ScanLine, Camera, CameraOff } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertCircle, Loader2, Clock, ScanLine, Camera, CameraOff, Lock } from 'lucide-react'
 
 interface RecentScan {
   id: string
@@ -47,6 +47,11 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [counts, setCounts] = useState({ hadir: 0, late: 0 })
+  const [requiresPin, setRequiresPin] = useState(false)
+  const [pinVerified, setPinVerified] = useState(false)
+  const [pinInput, setPinInput] = useState('')
+  const [pinError, setPinError] = useState<string | null>(null)
+  const [verifyingPin, setVerifyingPin] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scannerRef = useRef<any>(null)
   const lastScannedRef = useRef<string>('')
@@ -84,6 +89,15 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       setMeeting(data.meeting as MeetingInfo)
       setRecentScans((data.recent as RecentScan[]) ?? [])
       setCounts((data.counts as { hadir: number; late: number }) ?? { hadir: 0, late: 0 })
+      const needsPin = data.requires_pin as boolean
+      setRequiresPin(needsPin)
+      // Check if PIN was already verified in this session
+      if (needsPin) {
+        const savedPin = sessionStorage.getItem(`scan_pin_${token}`)
+        if (savedPin) setPinVerified(true)
+      } else {
+        setPinVerified(true)
+      }
       setLoadingInit(false)
     } catch (err: unknown) {
       const msg = err instanceof Error && err.name === 'AbortError'
@@ -179,6 +193,38 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameraActive])
 
+  // PIN refs for camera callback
+  const pinRef = useRef('')
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`scan_pin_${token}`)
+    if (saved) pinRef.current = saved
+  }, [token])
+
+  // Verify PIN
+  async function handleVerifyPin() {
+    if (!pinInput.trim()) return
+    setVerifyingPin(true)
+    setPinError(null)
+    try {
+      const res = await fetch('/api/scan/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, pin: pinInput.trim() }),
+      })
+      const data = await res.json()
+      if (data.valid) {
+        sessionStorage.setItem(`scan_pin_${token}`, pinInput.trim())
+        pinRef.current = pinInput.trim()
+        setPinVerified(true)
+      } else {
+        setPinError(data.error ?? 'PIN tidak valid.')
+      }
+    } catch {
+      setPinError('Gagal verifikasi PIN. Cek koneksi internet.')
+    }
+    setVerifyingPin(false)
+  }
+
   // submitNim — stable function, uses refs for mutable values
   const submitNim = useCallback(async (nim: string) => {
     if (!nim.trim() || submittingRef.current) return
@@ -189,7 +235,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       const res = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: tokenRef.current, no_regis: nim.trim(), is_late: isLateRef.current }),
+        body: JSON.stringify({ token: tokenRef.current, no_regis: nim.trim(), is_late: isLateRef.current, pin: pinRef.current }),
       })
       let data: Record<string, unknown>
       try { data = await res.json() } catch { data = {} }
@@ -247,6 +293,44 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
           >
             Coba Lagi
           </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // PIN Gate — show PIN form before scanner
+  if (requiresPin && !pinVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
+        <div className="w-full max-w-xs space-y-6 text-center">
+          <div className="space-y-2">
+            <Lock className="h-12 w-12 mx-auto text-blue-400" />
+            <h1 className="text-xl font-bold text-white">{meeting.nama_event}</h1>
+            <p className="text-sm text-gray-400">{meeting.tanggal} · {meeting.start_time}</p>
+            <p className="text-sm text-gray-400 mt-2">Masukkan PIN untuk mengakses scanner</p>
+          </div>
+          <form onSubmit={e => { e.preventDefault(); handleVerifyPin() }} className="space-y-3">
+            <Input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="Masukkan PIN 6 digit"
+              value={pinInput}
+              onChange={e => { setPinInput(e.target.value.replace(/\D/g, '').slice(0, 6)); setPinError(null) }}
+              className="bg-gray-700 border-gray-600 text-white text-center text-2xl tracking-[0.5em] h-14 rounded-xl placeholder:text-gray-500 placeholder:text-base placeholder:tracking-normal"
+              autoComplete="off"
+              autoFocus
+            />
+            {pinError && <p className="text-sm text-red-400">{pinError}</p>}
+            <Button
+              type="submit"
+              disabled={verifyingPin || pinInput.length < 6}
+              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+            >
+              {verifyingPin ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Verifikasi PIN
+            </Button>
+          </form>
         </div>
       </div>
     )

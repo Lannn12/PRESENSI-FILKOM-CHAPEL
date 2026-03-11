@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   try {
-    const { token, no_regis, is_late } = await req.json()
+    const { token, no_regis, is_late, pin } = await req.json()
     if (!token || !no_regis) {
       return NextResponse.json({ error: 'Token dan no_regis wajib diisi.' }, { status: 400 })
     }
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     // Validate token & get meeting
     const { data: meeting, error: meetErr } = await supabase
       .from('meetings')
-      .select('id, nama_event, status, tanggal, semester_id')
+      .select('id, nama_event, status, tanggal, semester_id, scanner_pin')
       .eq('scanner_token', token)
       .single()
 
@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
     }
     if (meeting.status !== 'AKTIF') {
       return NextResponse.json({ error: `Event berstatus ${meeting.status}. Presensi tidak dapat direkam.` }, { status: 403 })
+    }
+    // Validate PIN if the meeting has one
+    if (meeting.scanner_pin && meeting.scanner_pin !== pin) {
+      return NextResponse.json({ error: 'PIN tidak valid.' }, { status: 403 })
     }
 
     // Find student — ensure no_regis is uppercased to match stored data
@@ -115,7 +119,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createServiceClient()
   const { data: meeting, error: meetErr } = await supabase
     .from('meetings')
-    .select('id, nama_event, tanggal, start_time, end_time, status, event_type')
+    .select('id, nama_event, tanggal, start_time, end_time, status, event_type, scanner_pin')
     .eq('scanner_token', token)
     .single()
 
@@ -146,8 +150,13 @@ export async function GET(req: NextRequest) {
     supabase.from('attendances').select('id', { count: 'exact', head: true }).eq('meeting_id', meeting.id).eq('status', 'LATE'),
   ])
 
+  // Return whether PIN is required (but never return the actual PIN)
+  const requires_pin = !!meeting.scanner_pin
+  const { scanner_pin: _pin, ...meetingPublic } = meeting
+
   return NextResponse.json({
-    meeting,
+    meeting: meetingPublic,
+    requires_pin,
     recent: recent ?? [],
     counts: { hadir: hadirCount ?? 0, late: lateCount ?? 0 },
   })
