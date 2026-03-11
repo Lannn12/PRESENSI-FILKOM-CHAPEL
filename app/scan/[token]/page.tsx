@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { CheckCircle2, XCircle, AlertCircle, Loader2, Clock, ScanLine } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertCircle, Loader2, Clock, ScanLine, Camera, CameraOff } from 'lucide-react'
 
 interface RecentScan {
   id: string
@@ -31,6 +31,7 @@ type FeedbackState = { type: 'success' | 'warning' | 'error'; message: string } 
 export default function ScannerPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = React.use(params)
   const inputRef = useRef<HTMLInputElement>(null)
+  const cameraRegionId = 'qr-camera-region'
 
   const [meeting, setMeeting] = useState<MeetingInfo | null>(null)
   const [recentScans, setRecentScans] = useState<RecentScan[]>([])
@@ -41,6 +42,22 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   const [isLate, setIsLate] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [feedback, setFeedback] = useState<FeedbackState>(null)
+
+  const [cameraActive, setCameraActive] = useState(false)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scannerRef = useRef<any>(null)
+  const lastScannedRef = useRef<string>('')
+
+  // Refs so camera callback always reads latest values without stale closure
+  const isLateRef = useRef(isLate)
+  useEffect(() => { isLateRef.current = isLate }, [isLate])
+  const submittingRef = useRef(false)
+  const tokenRef = useRef(token)
+  useEffect(() => { tokenRef.current = token }, [token])
+  const addRecentScan = useCallback((scan: RecentScan) => {
+    setRecentScans(prev => [scan, ...prev.slice(0, 29)])
+  }, [])
 
   // Load meeting info
   const loadMeeting = useCallback(async () => {
@@ -66,31 +83,80 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
     if (!feedback) return
     const t = setTimeout(() => {
       setFeedback(null)
-      inputRef.current?.focus()
+      if (!cameraActive) inputRef.current?.focus()
     }, 2500)
     return () => clearTimeout(t)
-  }, [feedback])
+  }, [feedback, cameraActive])
 
-  async function handleScan(e?: React.FormEvent) {
-    e?.preventDefault()
-    const trimmed = noReg.trim()
-    if (!trimmed || submitting) return
+  // Camera scanner lifecycle
+  useEffect(() => {
+    if (!cameraActive) return
+    let mounted = true
 
+    async function startCamera() {
+      const { Html5Qrcode } = await import('html5-qrcode')
+      if (!mounted) return
+      const scanner = new Html5Qrcode(cameraRegionId)
+      scannerRef.current = scanner
+      try {
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 240, height: 120 } },
+          (decodedText: string) => {
+            const text = decodedText.trim()
+            if (!text || text === lastScannedRef.current) return
+            // Set cooldown immediately — before async submit — so rapid scans skip
+            lastScannedRef.current = text
+            if (submittingRef.current) {
+              // Already processing; release cooldown quickly so retry is possible
+              setTimeout(() => { lastScannedRef.current = '' }, 800)
+              return
+            }
+            submitNim(text)
+            setTimeout(() => { lastScannedRef.current = '' }, 3000)
+          },
+          () => { /* scan frame error — silent */ }
+        )
+      } catch (err: unknown) {
+        if (mounted) {
+          const msg = err instanceof Error ? err.message : String(err)
+          setCameraError('Kamera tidak dapat diakses: ' + msg)
+          setCameraActive(false)
+        }
+      }
+    }
+
+    startCamera()
+    return () => {
+      mounted = false
+      const s = scannerRef.current
+      scannerRef.current = null
+      if (s) {
+        s.stop().catch(() => {}).finally(() => { try { s.clear() } catch { /* ignore */ } })
+      }
+    }
+  // submitNim is stable (no state in deps), safe to include
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraActive])
+
+  // submitNim — stable function, uses refs for mutable values
+  const submitNim = useCallback(async (nim: string) => {
+    if (!nim.trim() || submittingRef.current) return
+    submittingRef.current = true
     setSubmitting(true)
-    setNoReg('')
 
     const res = await fetch('/api/scan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, no_regis: trimmed, is_late: isLate }),
+      body: JSON.stringify({ token: tokenRef.current, no_regis: nim.trim(), is_late: isLateRef.current }),
     })
     const data = await res.json()
+    submittingRef.current = false
     setSubmitting(false)
 
     if (data.success) {
       setFeedback({ type: 'success', message: data.message })
-      // Update recent list
-      setRecentScans(prev => [{
+      addRecentScan({
         id: Date.now().toString(),
         status: data.status,
         waktu_scan: new Date().toISOString(),
@@ -99,13 +165,14 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
           first_name: data.student.first_name,
           last_name: data.student.last_name,
         } : null,
-      }, ...prev.slice(0, 29)])
+      })
     } else if (data.warning) {
       setFeedback({ type: 'warning', message: data.message })
     } else {
       setFeedback({ type: 'error', message: data.error ?? 'Terjadi kesalahan.' })
     }
-  }
+  // Stable: only addRecentScan (which is also stable)
+  }, [addRecentScan])
 
   if (loadingInit) {
     return (
@@ -169,42 +236,63 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
             <p className="text-xs text-gray-500">Status: {meeting.status}</p>
           </div>
         ) : (
-          <form onSubmit={handleScan} className="bg-gray-800 rounded-2xl p-4 space-y-4">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <ScanLine className="h-4 w-4" />
-              <span>Scan atau ketik No. Registrasi</span>
+          <div className="bg-gray-800 rounded-2xl p-4 space-y-4">
+            {/* Camera region — always in DOM, hidden when not active to prevent unmount race */}
+            <div className={cameraActive ? 'block' : 'hidden'}>
+              <div id={cameraRegionId} className="w-full rounded-xl overflow-hidden" />
+              <p className="text-xs text-gray-400 text-center mt-1">Arahkan kamera ke barcode / QR kartu mahasiswa</p>
             </div>
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={noReg}
-                onChange={e => setNoReg(e.target.value)}
-                placeholder="No. Registrasi / scan barcode"
-                className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-500 text-base h-12 flex-1 rounded-xl"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                disabled={submitting}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Switch id="late-toggle" checked={isLate} onCheckedChange={setIsLate} />
-                <Label htmlFor="late-toggle" className={`text-sm font-medium ${isLate ? 'text-yellow-400' : 'text-gray-400'}`}>
-                  {isLate ? '⏰ LATE' : 'HADIR'}
-                </Label>
+
+            {cameraError && (
+              <p className="text-xs text-red-400 text-center">{cameraError}</p>
+            )}
+
+            <form onSubmit={e => { e.preventDefault(); const v = noReg.trim(); if (v) { setNoReg(''); submitNim(v) } }} className="space-y-4">
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <ScanLine className="h-4 w-4" />
+                <span>Scan atau ketik No. Registrasi</span>
               </div>
               <div className="flex gap-2">
-                <Button type="button" variant="ghost" className="text-gray-400 hover:text-white h-9 px-3" onClick={() => { setNoReg(''); inputRef.current?.focus() }}>
-                  Clear
-                </Button>
-                <Button type="submit" disabled={submitting || !noReg.trim()} className="h-9 bg-blue-600 hover:bg-blue-700 px-4">
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Scan'}
+                <Input
+                  ref={inputRef}
+                  value={noReg}
+                  onChange={e => setNoReg(e.target.value)}
+                  placeholder="No. Registrasi / scan barcode"
+                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-500 text-base h-12 flex-1 rounded-xl"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  disabled={submitting}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`h-12 w-12 shrink-0 rounded-xl border-gray-600 ${cameraActive ? 'bg-blue-700 border-blue-500 text-white' : 'bg-gray-700 text-gray-300'}`}
+                  title={cameraActive ? 'Matikan kamera' : 'Nyalakan kamera'}
+                  onClick={() => { setCameraError(null); setCameraActive(v => !v) }}
+                >
+                  {cameraActive ? <CameraOff className="h-5 w-5" /> : <Camera className="h-5 w-5" />}
                 </Button>
               </div>
-            </div>
-          </form>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Switch id="late-toggle" checked={isLate} onCheckedChange={setIsLate} />
+                  <Label htmlFor="late-toggle" className={`text-sm font-medium ${isLate ? 'text-yellow-400' : 'text-gray-400'}`}>
+                    {isLate ? '⏰ LATE' : 'HADIR'}
+                  </Label>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" variant="ghost" className="text-gray-400 hover:text-white h-9 px-3" onClick={() => { setNoReg(''); inputRef.current?.focus() }}>
+                    Clear
+                  </Button>
+                  <Button type="submit" disabled={submitting || !noReg.trim()} className="h-9 bg-blue-600 hover:bg-blue-700 px-4">
+                    {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Scan'}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
         )}
 
         {/* Recent Scans */}

@@ -96,7 +96,8 @@ export default function PertemuanPage() {
   }
 
   function getScannerUrl(token: string) {
-    return `${window.location.origin}/scan/${token}`
+    const base = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+    return `${base}/scan/${token}`
   }
 
   function copyLink(token: string) {
@@ -266,7 +267,7 @@ export default function PertemuanPage() {
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Scan QR ini untuk membuka halaman scanner</p>
               <div className="flex justify-center">
-                <QRCode value={`${typeof window !== 'undefined' ? window.location.origin : ''}/scan/${qrMeeting.scanner_token}`} size={220} level="M" includeMargin />
+                <QRCode value={getScannerUrl(qrMeeting.scanner_token)} size={220} level="M" includeMargin />
               </div>
               <div className="bg-muted rounded p-2 text-xs font-mono break-all text-left">
                 {typeof window !== 'undefined' ? getScannerUrl(qrMeeting.scanner_token) : `/scan/${qrMeeting.scanner_token}`}
