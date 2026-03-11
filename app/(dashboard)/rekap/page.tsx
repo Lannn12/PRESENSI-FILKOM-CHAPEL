@@ -36,6 +36,7 @@ export default function RekapPage() {
   const [loading, setLoading] = useState(true)
 
   const [filterType, setFilterType] = useState<'ALL' | EventType>('ALL')
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'AKTIF' | 'DITUTUP'>('ALL')
   const [filterSearch, setFilterSearch] = useState('')
   const [exporting, setExporting] = useState(false)
   const [savingCell, setSavingCell] = useState<string | null>(null) // "studentId__meetingId"
@@ -49,8 +50,9 @@ export default function RekapPage() {
     if (!activeSemester) return
     setLoading(true)
 
-    let mQuery = supabase.from('meetings').select('*').eq('semester_id', activeSemester.id).eq('status', 'DITUTUP').order('tanggal')
+    let mQuery = supabase.from('meetings').select('*').eq('semester_id', activeSemester.id).in('status', ['AKTIF', 'DITUTUP']).order('tanggal')
     if (filterType !== 'ALL') mQuery = mQuery.eq('event_type', filterType)
+    if (filterStatus !== 'ALL') mQuery = mQuery.eq('status', filterStatus)
     const { data: mData } = await mQuery
     const filteredMeetings = mData ?? []
     setMeetings(filteredMeetings)
@@ -81,7 +83,7 @@ export default function RekapPage() {
     })
     setPivotRows(rows)
     setLoading(false)
-  }, [supabase, activeSemester, filterType])
+  }, [supabase, activeSemester, filterType, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -253,6 +255,16 @@ export default function RekapPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={filterStatus} onValueChange={v => setFilterStatus(v as any)}>
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Semua Status</SelectItem>
+            <SelectItem value="AKTIF">Aktif</SelectItem>
+            <SelectItem value="DITUTUP">Ditutup</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
@@ -264,7 +276,7 @@ export default function RekapPage() {
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : meetings.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground text-sm">
-              Belum ada event yang ditutup{filterType !== 'ALL' ? ` untuk tipe "${EVENT_TYPE_LABELS[filterType]}"` : ''}
+              Belum ada event yang aktif atau ditutup{filterType !== 'ALL' ? ` untuk tipe "${EVENT_TYPE_LABELS[filterType]}"` : ''}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -278,6 +290,7 @@ export default function RekapPage() {
                       <th key={m.id} className="px-2 py-2 text-center font-medium text-xs min-w-24">
                         <div className="truncate max-w-24" title={m.nama_event}>{m.nama_event}</div>
                         <div className="text-muted-foreground font-normal">{m.tanggal}</div>
+                        {m.status === 'AKTIF' && <span className="inline-block mt-0.5 rounded-full bg-green-100 text-green-700 px-1.5 py-0 text-[10px] font-medium">Aktif</span>}
                       </th>
                     ))}
                   </tr>
