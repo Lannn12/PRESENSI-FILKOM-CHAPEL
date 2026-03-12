@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(req: NextRequest) {
+
   const no_regis = req.nextUrl.searchParams.get('no_regis')
   if (!no_regis) return NextResponse.json({ error: 'no_regis required.' }, { status: 400 })
 
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
   const { data: student } = await supabase
     .from('students')
     .select('id, no_regis, first_name, last_name, major, gender')
-    .eq('no_regis', no_regis.trim())
+    .eq('no_regis', no_regis.trim().toUpperCase())
     .single()
 
   if (!student) return NextResponse.json({ error: 'Mahasiswa tidak ditemukan.' }, { status: 404 })
