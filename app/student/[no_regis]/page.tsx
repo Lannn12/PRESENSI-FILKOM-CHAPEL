@@ -5,39 +5,8 @@ import { useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Loader2, BookOpen } from 'lucide-react'
-import type { EventType, AttendanceStatus } from '@/lib/types'
-import { EVENT_TYPE_LABELS, STATUS_LABELS } from '@/lib/types'
-
-const STATUS_COLORS: Record<AttendanceStatus, string> = {
-  HADIR: 'bg-green-100 text-green-800',
-  LATE: 'bg-yellow-100 text-yellow-800',
-  TIDAK_HADIR: 'bg-red-100 text-red-800',
-}
-
-interface StudentInfo {
-  no_regis: string
-  first_name: string
-  last_name: string
-  major: string
-  gender: string
-}
-interface Stats {
-  total: number
-  hadir: number
-  late: number
-  tidak_hadir: number
-}
-interface AttRow {
-  id: string
-  status: AttendanceStatus
-  waktu_scan: string | null
-  meeting: {
-    nama_event: string
-    tanggal: string
-    event_type: EventType
-    status: string
-  } | null
-}
+import type { StudentInfo, AttendanceStats, AttendanceRow } from '@/lib/types'
+import { EVENT_TYPE_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/lib/types'
 
 export default function StudentDetailPage() {
   const params = useParams<{ no_regis: string }>()
@@ -45,8 +14,8 @@ export default function StudentDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<{
     student: StudentInfo
-    stats: Stats
-    attendances: AttRow[]
+    stats: AttendanceStats
+    attendances: AttendanceRow[]
   } | null>(null)
 
   useEffect(() => {

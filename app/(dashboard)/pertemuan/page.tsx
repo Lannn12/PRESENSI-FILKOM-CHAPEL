@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Plus, Loader2, Link2, QrCode, Eye, Trash2, ExternalLink, KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
+import { hashPin } from '@/lib/hash'
 import { QRCodeSVG as QRCode } from 'qrcode.react'
 import type { Meeting, AbsenterGroup, Semester, EventType, EventStatus } from '@/lib/types'
 import { EVENT_TYPE_LABELS, EVENT_STATUS_COLORS } from '@/lib/types'
@@ -40,7 +41,7 @@ export default function PertemuanPage() {
 
   useEffect(() => {
     supabase.from('semesters').select('*').eq('is_active', true).single()
-      .then(({ data }) => setActiveSemester(data))
+      .then(({ data }: { data: Semester | null }) => setActiveSemester(data))
   }, [supabase])
 
   const fetchAll = useCallback(async () => {
@@ -84,7 +85,13 @@ export default function PertemuanPage() {
     const updateData: Record<string, unknown> = { status: newStatus }
     if (newStatus === 'AKTIF') {
       const pin = String(Math.floor(100000 + Math.random() * 900000))
-      updateData.scanner_pin = pin
+      // Store hashed PIN in database, show plain PIN to admin via toast
+      updateData.scanner_pin = hashPin(pin)
+      const { error } = await supabase.from('meetings').update(updateData).eq('id', meetingId)
+      if (error) { toast.error('Gagal update status: ' + error.message); return }
+      toast.success(`Event diaktifkan! PIN Absenter: ${pin}`, { duration: 10000 })
+      fetchAll()
+      return
     } else if (newStatus === 'DRAFT') {
       updateData.scanner_pin = null
     }
@@ -192,16 +199,13 @@ export default function PertemuanPage() {
                             <QrCode className="h-3.5 w-3.5" />
                           </Button>
                           {m.status === 'AKTIF' && m.scanner_pin && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs font-mono gap-1"
-                              title="Salin PIN absenter"
-                              onClick={() => { navigator.clipboard.writeText(m.scanner_pin!); toast.success(`PIN ${m.scanner_pin} disalin!`) }}
+                            <span
+                              className="inline-flex items-center gap-1 h-7 px-2 text-xs text-blue-600 bg-blue-50 rounded-md border border-blue-200"
+                              title="PIN aktif (ditampilkan saat aktivasi)"
                             >
                               <KeyRound className="h-3 w-3" />
-                              {m.scanner_pin}
-                            </Button>
+                              PIN Aktif
+                            </span>
                           )}
                         </div>
                       </TableCell>
@@ -296,8 +300,8 @@ export default function PertemuanPage() {
               {qrMeeting.scanner_pin && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
                   <p className="text-xs text-blue-600 font-medium">PIN Absenter</p>
-                  <p className="text-2xl font-mono font-bold tracking-[0.3em] text-blue-800">{qrMeeting.scanner_pin}</p>
-                  <p className="text-xs text-blue-500">Berikan PIN ini kepada absenter CSSA</p>
+                  <p className="text-sm text-blue-800">PIN ditampilkan saat event diaktifkan (via notifikasi).</p>
+                  <p className="text-xs text-blue-500">Untuk mendapatkan PIN baru, ubah status ke Draft lalu aktifkan kembali.</p>
                 </div>
               )}
               <div className="flex gap-2 justify-center">

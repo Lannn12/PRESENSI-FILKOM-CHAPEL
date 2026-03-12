@@ -67,10 +67,10 @@ export default function DashboardPage() {
     // Seating preview
     const { data: sections } = await supabase.from('sections').select('gender, capacity').eq('semester_id', activeSemester?.id ?? '')
     const { data: assignments } = await supabase.from('student_sections').select('section_id, sections(gender)').eq('semester_id', activeSemester?.id ?? '')
-    const maleCapacity = (sections ?? []).filter((s) => s.gender === 'MALE').reduce((a, s) => a + s.capacity, 0)
-    const femaleCapacity = (sections ?? []).filter((s) => s.gender === 'FEMALE').reduce((a, s) => a + s.capacity, 0)
-    const maleAssigned = (assignments ?? []).filter((a: any) => a.sections?.gender === 'MALE').length
-    const femaleAssigned = (assignments ?? []).filter((a: any) => a.sections?.gender === 'FEMALE').length
+    const maleCapacity = (sections ?? []).filter((s: { gender: string; capacity: number }) => s.gender === 'MALE').reduce((a: number, s: { gender: string; capacity: number }) => a + s.capacity, 0)
+    const femaleCapacity = (sections ?? []).filter((s: { gender: string; capacity: number }) => s.gender === 'FEMALE').reduce((a: number, s: { gender: string; capacity: number }) => a + s.capacity, 0)
+    const maleAssigned = (assignments ?? []).filter((a: Record<string, unknown>) => (a.sections as Record<string, unknown> | null)?.gender === 'MALE').length
+    const femaleAssigned = (assignments ?? []).filter((a: Record<string, unknown>) => (a.sections as Record<string, unknown> | null)?.gender === 'FEMALE').length
     setSeatingPreview({ male: { assigned: maleAssigned, capacity: maleCapacity }, female: { assigned: femaleAssigned, capacity: femaleCapacity } })
   }, [supabase])
 
@@ -86,16 +86,16 @@ export default function DashboardPage() {
 
     if (!meetings?.length) { setChartData([]); setLoadingChart(false); return }
 
-    const meetingIds = meetings.map((m) => m.id)
+    const meetingIds = meetings.map((m: { id: string }) => m.id)
     const { data: attendances } = await supabase.from('attendances').select('meeting_id, status').in('meeting_id', meetingIds)
 
-    const data: ChartData[] = meetings.map((m) => {
-      const rows = (attendances ?? []).filter((a) => a.meeting_id === m.id)
+    const data: ChartData[] = meetings.map((m: { id: string; nama_event: string }) => {
+      const rows = (attendances ?? []).filter((a: { meeting_id: string }) => a.meeting_id === m.id)
       return {
         event: m.nama_event.length > 14 ? m.nama_event.slice(0, 14) + '…' : m.nama_event,
-        HADIR: rows.filter((r) => r.status === 'HADIR').length,
-        LATE: rows.filter((r) => r.status === 'LATE').length,
-        TIDAK_HADIR: rows.filter((r) => r.status === 'TIDAK_HADIR').length,
+        HADIR: rows.filter((r: { status: string }) => r.status === 'HADIR').length,
+        LATE: rows.filter((r: { status: string }) => r.status === 'LATE').length,
+        TIDAK_HADIR: rows.filter((r: { status: string }) => r.status === 'TIDAK_HADIR').length,
       }
     })
     setChartData(data)
@@ -130,7 +130,9 @@ export default function DashboardPage() {
     try {
       const result = await supabase.rpc('get_students_absent_more_than', { threshold_count: threshold })
       data = result.data
-    } catch { }
+    } catch (err) {
+      console.error('[Dashboard] RPC get_students_absent_more_than failed:', err)
+    }
     if (!data) {
       // Fallback: manual query
       const { data: allAtt } = await supabase.from('attendances').select('student_id, status, student:students(no_regis, first_name, last_name, major)')

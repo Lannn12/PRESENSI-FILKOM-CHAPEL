@@ -43,7 +43,7 @@ export default function RekapPage() {
 
   useEffect(() => {
     supabase.from('semesters').select('*').eq('is_active', true).single()
-      .then(({ data }) => setActiveSemester(data))
+      .then(({ data }: { data: Semester | null }) => setActiveSemester(data))
   }, [supabase])
 
   const fetchData = useCallback(async () => {
@@ -59,7 +59,7 @@ export default function RekapPage() {
 
     if (!filteredMeetings.length) { setPivotRows([]); setLoading(false); return }
 
-    const meetingIds = filteredMeetings.map(m => m.id)
+    const meetingIds = filteredMeetings.map((m: { id: string }) => m.id)
     const { data: studs } = await supabase.from('students').select('id, no_regis, first_name, last_name, major').order('last_name')
     const { data: atts } = await supabase.from('attendances').select('student_id, meeting_id, status').in('meeting_id', meetingIds)
 
@@ -69,7 +69,7 @@ export default function RekapPage() {
       attMap.set(`${a.student_id}__${a.meeting_id}`, a.status as AttendanceStatus)
     }
 
-    const rows: PivotRow[] = (studs ?? []).map(s => {
+    const rows: PivotRow[] = (studs ?? []).map((s: { id: string; no_regis: string; first_name: string; last_name: string; major: string }) => {
       const row: PivotRow = {
         student_id: s.id,
         no_regis: s.no_regis,
@@ -87,7 +87,7 @@ export default function RekapPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const displayRows = pivotRows.filter(r =>
+  const displayRows = pivotRows.filter((r: PivotRow) =>
     !filterSearch || r.no_regis.toLowerCase().includes(filterSearch.toLowerCase()) || r.nama.toLowerCase().includes(filterSearch.toLowerCase()) || r.major.toLowerCase().includes(filterSearch.toLowerCase())
   )
 
@@ -103,7 +103,7 @@ export default function RekapPage() {
           .eq('student_id', studentId)
           .eq('meeting_id', meetingId)
         if (error) throw error
-        setPivotRows(prev => prev.map(r =>
+        setPivotRows(prev => prev.map((r: PivotRow) =>
           r.student_id === studentId ? { ...r, [meetingId]: '—' } : r
         ))
         toast.success('Status dihapus')
@@ -130,7 +130,7 @@ export default function RekapPage() {
           if (error) throw error
         }
 
-        setPivotRows(prev => prev.map(r =>
+        setPivotRows(prev => prev.map((r: PivotRow) =>
           r.student_id === studentId ? { ...r, [meetingId]: newStatus } : r
         ))
         toast.success(`Status diubah ke ${STATUS_LABELS[newStatus]}`)
@@ -144,12 +144,12 @@ export default function RekapPage() {
 
   // Export helpers
   function getExportData() {
-    const headers = ['No. Reg', 'Nama', 'Prodi', ...meetings.map(m => `${m.nama_event} (${m.tanggal})`)]
-    const rows = displayRows.map(r => [
+    const headers = ['No. Reg', 'Nama', 'Prodi', ...meetings.map((m: Meeting) => `${m.nama_event} (${m.tanggal})`)]
+    const rows = displayRows.map((r: PivotRow) => [
       r.no_regis,
       r.nama,
       r.major,
-      ...meetings.map(m => {
+      ...meetings.map((m: Meeting) => {
         const val = r[m.id]
         return val === 'HADIR' ? 'H' : val === 'LATE' ? 'L' : val === 'TIDAK_HADIR' ? 'X' : ''
       }),
@@ -286,7 +286,7 @@ export default function RekapPage() {
                     <th className="sticky left-0 bg-muted/50 px-3 py-2 text-left font-medium text-xs w-28">No. Reg</th>
                     <th className="sticky left-28 bg-muted/50 px-3 py-2 text-left font-medium text-xs min-w-44">Nama</th>
                     <th className="px-3 py-2 text-left font-medium text-xs min-w-32">Prodi</th>
-                    {meetings.map(m => (
+                    {meetings.map((m: Meeting) => (
                       <th key={m.id} className="px-2 py-2 text-center font-medium text-xs min-w-24">
                         <div className="truncate max-w-24" title={m.nama_event}>{m.nama_event}</div>
                         <div className="text-muted-foreground font-normal">{m.tanggal}</div>
@@ -296,12 +296,12 @@ export default function RekapPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {displayRows.map(row => (
+                  {displayRows.map((row: PivotRow) => (
                     <tr key={row.student_id} className="hover:bg-accent/50">
                       <td className="sticky left-0 bg-white px-3 py-2 text-xs font-mono">{row.no_regis}</td>
                       <td className="sticky left-28 bg-white px-3 py-2 text-xs">{row.nama}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground">{row.major}</td>
-                      {meetings.map(m => {
+                      {meetings.map((m: Meeting) => {
                         const val = row[m.id] as string
                         const status = val as AttendanceStatus
                         const cellKey = `${row.student_id}__${m.id}`

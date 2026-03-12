@@ -26,7 +26,7 @@ export default function MahasiswaPage() {
 
   useEffect(() => {
     supabase.from('semesters').select('*').eq('is_active', true).single()
-      .then(({ data }) => setActiveSemester(data))
+      .then(({ data }: { data: Semester | null }) => setActiveSemester(data))
   }, [supabase])
 
   return (
@@ -319,12 +319,13 @@ function AbsenterTab({ activeSemester }: { activeSemester: Semester | null }) {
   const [newGroupName, setNewGroupName] = useState('')
   const [newGroupDesc, setNewGroupDesc] = useState('')
   const [creating, setCreating] = useState(false)
+  const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null)
 
   const fetchGroups = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('absenter_groups').select('*').eq('semester_id', activeSemester?.id ?? '').order('nama_group')
     const groupsWithCount = await Promise.all(
-      (data ?? []).map(async (g) => {
+      (data ?? []).map(async (g: AbsenterGroup) => {
         const { count } = await supabase.from('absenter_group_members').select('id', { count: 'exact', head: true }).eq('group_id', g.id)
         return { ...g, member_count: count ?? 0 }
       })
@@ -342,9 +343,9 @@ function AbsenterTab({ activeSemester }: { activeSemester: Semester | null }) {
       supabase.from('absenter_group_members').select('student_id').eq('group_id', group.id),
       supabase.from('students').select('*').order('last_name'),
     ])
-    const ids = new Set((mems ?? []).map((m) => m.student_id))
-    setMemberIds(ids)
-    setMembers((studs ?? []).filter((s) => ids.has(s.id)))
+    const ids = new Set((mems ?? []).map((m: { student_id: string }) => m.student_id))
+    setMemberIds(ids as Set<string>)
+    setMembers((studs ?? []).filter((s: Student) => ids.has(s.id)))
     setAllStudents(studs ?? [])
     setLoadingMembers(false)
   }
@@ -376,11 +377,13 @@ function AbsenterTab({ activeSemester }: { activeSemester: Semester | null }) {
     setCreating(false)
   }
 
-  async function handleDeleteGroup(groupId: string) {
-    const { error } = await supabase.from('absenter_groups').delete().eq('id', groupId)
+  async function handleDeleteGroup() {
+    if (!deleteGroupId) return
+    const { error } = await supabase.from('absenter_groups').delete().eq('id', deleteGroupId)
     if (error) { toast.error('Gagal hapus: ' + error.message); return }
     toast.success('Group dihapus')
-    if (selectedGroup?.id === groupId) setSelectedGroup(null)
+    if (selectedGroup?.id === deleteGroupId) setSelectedGroup(null)
+    setDeleteGroupId(null)
     fetchGroups()
   }
 
@@ -416,7 +419,7 @@ function AbsenterTab({ activeSemester }: { activeSemester: Semester | null }) {
                       {g.member_count} anggota
                     </span>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 shrink-0" onClick={(e) => { e.stopPropagation(); handleDeleteGroup(g.id) }}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 shrink-0" onClick={(e) => { e.stopPropagation(); setDeleteGroupId(g.id) }}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -478,6 +481,20 @@ function AbsenterTab({ activeSemester }: { activeSemester: Semester | null }) {
             <Button onClick={handleCreateGroup} disabled={creating || !newGroupName.trim()}>
               {creating && <Loader2 className="h-4 w-4 animate-spin mr-1" />}Buat Group
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete group confirm */}
+      <Dialog open={!!deleteGroupId} onOpenChange={() => setDeleteGroupId(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Hapus Absenter Group?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Semua data anggota dalam group ini akan ikut terhapus. Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteGroupId(null)}>Batal</Button>
+            <Button variant="destructive" onClick={handleDeleteGroup}>Hapus</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
