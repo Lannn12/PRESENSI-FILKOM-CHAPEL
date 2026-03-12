@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Upload, Plus, Trash2, Loader2, Users, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Upload, Plus, Trash2, Loader2, Users, Search, ChevronLeft, ChevronRight, Link, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import type { Student, AbsenterGroup, Semester } from '@/lib/types'
@@ -234,7 +234,7 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
                 <TableHead>Nama</TableHead>
                 <TableHead>Prodi</TableHead>
                 <TableHead>Gender</TableHead>
-                <TableHead className="w-16" />
+                <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -253,9 +253,14 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700" onClick={() => setDeleteId(s.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-500 hover:text-blue-700" title="Copy link kehadiran" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/student/${s.no_regis}`); toast.success('Link disalin!') }}>
+                        <Link className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700" onClick={() => setDeleteId(s.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -263,7 +268,14 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
           </Table>
         </div>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Menampilkan {students.length} dari {totalCount} mahasiswa</span>
+          <div className="flex items-center gap-2">
+            <span>Menampilkan {students.length} dari {totalCount} mahasiswa</span>
+            {students.length > 0 && (
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { const lines = students.map(s => `${s.last_name}, ${s.first_name}\t${s.no_regis}\t${window.location.origin}/student/${s.no_regis}`); navigator.clipboard.writeText('Nama\tNo. Reg\tLink Kehadiran\n' + lines.join('\n')); toast.success(`${students.length} link disalin ke clipboard`) }}>
+                <Copy className="h-3 w-3 mr-1" /> Copy Semua Link
+              </Button>
+            )}
+          </div>
           {totalPages > 1 && (
             <div className="flex items-center gap-1">
               <span className="mr-1">Hal {page + 1}/{totalPages}</span>
