@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     // Validate token & get meeting
     const { data: meeting, error: meetErr } = await supabase
       .from('meetings')
-      .select('id, nama_event, status, tanggal, semester_id, scanner_pin')
+      .select('id, nama_event, status, tanggal, end_time, semester_id, scanner_pin')
       .eq('scanner_token', token)
       .single()
 
@@ -28,6 +28,23 @@ export async function POST(req: NextRequest) {
     if (meeting.status !== 'AKTIF') {
       return NextResponse.json({ error: `Event berstatus ${meeting.status}. Presensi tidak dapat direkam.` }, { status: 403 })
     }
+
+    // NEW: Time-based auto-validation
+    if (meeting.end_time) {
+      const now = new Date()
+      // Create a date object for the end_time today
+      const [hours, minutes, seconds] = meeting.end_time.split(':').map(Number)
+      const meetingEnd = new Date(meeting.tanggal)
+      meetingEnd.setHours(hours, minutes, seconds || 0)
+
+      if (now > meetingEnd) {
+        return NextResponse.json({ 
+          error: 'Waktu presensi untuk event ini telah berakhir.',
+          auto_close_triggered: true 
+        }, { status: 403 })
+      }
+    }
+
     // Validate PIN if the meeting has one (compare plain text PIN)
     if (meeting.scanner_pin && meeting.scanner_pin !== (pin ?? '')) {
       return NextResponse.json({ error: 'PIN tidak valid.' }, { status: 403 })

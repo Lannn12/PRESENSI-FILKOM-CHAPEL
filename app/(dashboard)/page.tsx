@@ -60,15 +60,16 @@ const StatCard = ({
   gradient: string
   subtitle?: string
 }) => (
-  <Card className="shadow-card hover:shadow-float transition-all duration-300 border-glow overflow-hidden">
-    <CardContent className="p-5">
+  <Card className="group relative overflow-hidden border-none shadow-card hover:shadow-float transition-all duration-500 bg-card/50 backdrop-blur-sm">
+    <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-10 blur-3xl transition-all duration-500 group-hover:scale-150 ${gradient}`} />
+    <CardContent className="p-6">
       <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
-          <p className="text-3xl font-bold text-gradient-primary">{value}</p>
-          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">{title}</p>
+          <p className="text-3xl font-extrabold tracking-tight text-gradient-primary">{value}</p>
+          {subtitle && <p className="text-xs text-muted-foreground/80 font-medium">{subtitle}</p>}
         </div>
-        <div className={`w-14 h-14 rounded-2xl ${gradient} flex items-center justify-center shadow-lg`}>
+        <div className={`w-14 h-14 rounded-2xl ${gradient} flex items-center justify-center shadow-lg shadow-indigo-500/20 transform transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110`}>
           <Icon className="h-7 w-7 text-white" />
         </div>
       </div>
@@ -320,10 +321,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold text-gradient-primary">Dashboard</h1>
-        <p className="text-muted-foreground text-sm">Ringkasan presensi kuliah umum FILKOM</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col gap-1.5">
+        <h1 className="text-4xl font-extrabold tracking-tight text-gradient-primary">Dashboard</h1>
+        <p className="text-muted-foreground text-sm font-medium">Selamat datang di sistem manajemen presensi Kuliah Umum FILKOM</p>
       </div>
 
       {/* Summary Cards */}
@@ -346,33 +347,34 @@ export default function DashboardPage() {
           icon={TrendingUp}
           gradient="gradient-green"
         />
-        <Card className="shadow-card hover:shadow-float transition-all duration-300 border-glow overflow-hidden">
-          <CardContent className="p-5">
-            <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Seating Preview</p>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/30">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg gradient-blue flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">♂</span>
+        <Card className="group relative overflow-hidden border-none shadow-card hover:shadow-float transition-all duration-500 bg-card/50 backdrop-blur-sm">
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-10 blur-3xl transition-all duration-500 group-hover:scale-150 gradient-orange" />
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">Seating Preview</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 transition-colors hover:bg-blue-100/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl gradient-blue flex items-center justify-center shadow-sm">
+                      <span className="text-white text-xs font-bold">♂</span>
                     </div>
-                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Male</span>
+                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">Male</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-bold text-blue-700 dark:text-blue-300">{seatingPreview.male.assigned}</span>
-                    <span className="text-xs text-blue-600/70 dark:text-blue-400/70"> / {seatingPreview.male.capacity}</span>
+                    <span className="text-xl font-bold text-blue-800 dark:text-blue-200">{seatingPreview.male.assigned}</span>
+                    <span className="text-xs text-blue-600/60 dark:text-blue-400/60 font-medium"> / {seatingPreview.male.capacity}</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-pink-50 dark:bg-pink-950/30">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg gradient-purple flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">♀</span>
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-pink-50/50 dark:bg-pink-950/20 border border-pink-100/50 dark:border-pink-900/30 transition-colors hover:bg-pink-100/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl gradient-purple flex items-center justify-center shadow-sm">
+                      <span className="text-white text-xs font-bold">♀</span>
                     </div>
-                    <span className="text-sm font-medium text-pink-700 dark:text-pink-300">Female</span>
+                    <span className="text-sm font-semibold text-pink-700 dark:text-pink-300">Female</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-bold text-pink-700 dark:text-pink-300">{seatingPreview.female.assigned}</span>
-                    <span className="text-xs text-pink-600/70 dark:text-pink-400/70"> / {seatingPreview.female.capacity}</span>
+                    <span className="text-xl font-bold text-pink-800 dark:text-pink-200">{seatingPreview.female.assigned}</span>
+                    <span className="text-xs text-pink-600/60 dark:text-pink-400/60 font-medium"> / {seatingPreview.female.capacity}</span>
                   </div>
                 </div>
               </div>
@@ -382,276 +384,343 @@ export default function DashboardPage() {
       </div>
 
       {/* Attendance Trend Chart */}
-      <Card className="shadow-card border-glow">
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
+      <Card className="border-none shadow-card bg-card/50 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between p-6 pb-2">
           <div>
-            <CardTitle className="text-base font-semibold">Attendance Trends</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">Statistik kehadiran per event</p>
+            <CardTitle className="text-lg font-bold tracking-tight">Attendance Trends</CardTitle>
+            <p className="text-sm text-muted-foreground font-medium mt-0.5">Analisis visual kehadiran per event</p>
           </div>
           <Select value={chartFilter} onValueChange={(v) => setChartFilter(v as any)}>
-            <SelectTrigger className="w-36 h-9 text-sm">
+            <SelectTrigger className="w-44 h-10 rounded-xl bg-background/50 border-none shadow-sm font-medium">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Events</SelectItem>
+            <SelectContent className="rounded-xl border-none shadow-float">
+              <SelectItem value="ALL">Semua Event</SelectItem>
               {(Object.keys(EVENT_TYPE_LABELS) as EventType[]).map((t) => (
                 <SelectItem key={t} value={t}>{EVENT_TYPE_LABELS[t]}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           {loadingChart ? (
-            <div className="flex items-center justify-center h-48">
-              <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
+            <div className="flex items-center justify-center h-72">
+              <Loader2 className="animate-spin h-8 w-8 text-primary/50" />
             </div>
           ) : chartData.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
-              <div className="text-center space-y-2">
-                <BarChart className="h-12 w-12 mx-auto opacity-30" />
-                <p>Belum ada data event yang ditutup</p>
+            <div className="flex flex-col items-center justify-center h-72 text-muted-foreground">
+              <div className="w-16 h-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
+                <BarChart className="h-8 w-8 opacity-20" />
               </div>
+              <p className="font-medium">Belum ada data event yang ditutup</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="event" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                <Tooltip 
-                  contentStyle={{ 
-                    borderRadius: '12px', 
-                    border: 'none',
-                    boxShadow: '0 4px 16px -4px rgb(0 0 0 / 0.15)',
-                    backgroundColor: 'hsl(var(--card))',
-                  }}
-                  labelStyle={{ fontWeight: 600, marginBottom: '8px' }}
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted/50" />
+                <XAxis 
+                  dataKey="event" 
+                  tick={{ fontSize: 11, fontWeight: 500 }} 
+                  axisLine={false}
+                  tickLine={false}
+                  dy={10}
+                  className="fill-muted-foreground" 
                 />
-                <Legend wrapperStyle={{ paddingTop: '12px' }} />
-                <Bar dataKey="HADIR" fill="#22c55e" radius={[6, 6, 0, 0]} className="transition-all duration-300" />
-                <Bar dataKey="LATE" fill="#eab308" radius={[6, 6, 0, 0]} className="transition-all duration-300" />
-                <Bar dataKey="TIDAK_HADIR" fill="#ef4444" radius={[6, 6, 0, 0]} className="transition-all duration-300" />
+                <YAxis 
+                  tick={{ fontSize: 11, fontWeight: 500 }} 
+                  axisLine={false}
+                  tickLine={false}
+                  className="fill-muted-foreground" 
+                />
+                <Tooltip 
+                  cursor={{ fill: 'hsl(var(--muted)/0.3)', radius: 8 }}
+                  contentStyle={{ 
+                    borderRadius: '16px', 
+                    border: 'none',
+                    boxShadow: '0 10px 40px -10px rgb(0 0 0 / 0.2)',
+                    backgroundColor: 'hsl(var(--card))',
+                    padding: '12px'
+                  }}
+                  itemStyle={{ fontSize: '12px', fontWeight: 600, padding: '2px 0' }}
+                  labelStyle={{ fontWeight: 800, marginBottom: '8px', color: 'hsl(var(--foreground))' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: '25px', fontSize: '12px', fontWeight: 500 }} />
+                <Bar dataKey="HADIR" fill="url(#colorHadir)" radius={[6, 6, 0, 0]} barSize={24} />
+                <Bar dataKey="LATE" fill="url(#colorLate)" radius={[6, 6, 0, 0]} barSize={24} />
+                <Bar dataKey="TIDAK_HADIR" fill="url(#colorAbsent)" radius={[6, 6, 0, 0]} barSize={24} />
+                <defs>
+                  <linearGradient id="colorHadir" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="colorLate" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="colorAbsent" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ef4444" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#dc2626" stopOpacity={1}/>
+                  </linearGradient>
+                </defs>
               </BarChart>
             </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-8">
         {/* Search & Edit Attendance */}
-        <Card className="shadow-card border-glow">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Search className="h-4 w-4 text-blue-500" />
-              Cari & Edit Kehadiran
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">Cari mahasiswa dan edit status kehadiran</p>
+        <Card className="border-none shadow-card bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col">
+          <CardHeader className="p-6 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl gradient-blue flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <Search className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold tracking-tight">Cari & Edit Kehadiran</CardTitle>
+                <p className="text-sm text-muted-foreground font-medium">Pencarian cepat status mahasiswa</p>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex gap-2">
-              <Input
-                placeholder="No. Reg atau nama mahasiswa..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="h-11"
-              />
-              <Button onClick={handleSearch} disabled={searching} size="icon" className="h-11 w-11">
-                {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          <CardContent className="p-6 pt-0 space-y-5 flex-1">
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="No. Reg atau nama..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="h-12 pl-10 rounded-xl bg-background/50 border-none shadow-inner"
+                />
+              </div>
+              <Button onClick={handleSearch} disabled={searching} className="h-12 px-6 rounded-xl gradient-blue shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                {searching ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Cari'}
               </Button>
             </div>
-            {searchResult && !searchResult.student && (
-              <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
-                <p className="text-sm text-red-600 dark:text-red-400 text-center font-medium">Mahasiswa tidak ditemukan.</p>
-              </div>
-            )}
-            {searchResult?.student && (
-              <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/50 dark:border-blue-800/50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full gradient-blue flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">
-                        {searchResult.student.first_name[0]}{searchResult.student.last_name[0]}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm">{searchResult.student.last_name}, {searchResult.student.first_name}</p>
-                      <p className="text-xs text-muted-foreground">{searchResult.student.no_regis} · {searchResult.student.major}</p>
+            
+            <div className="flex-1 min-h-[300px]">
+              {searchResult && !searchResult.student && (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-red-50/30 dark:bg-red-950/10 rounded-3xl border border-red-100/50 dark:border-red-900/20">
+                  <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                    <UserCheck className="h-8 w-8 text-red-500 opacity-50" />
+                  </div>
+                  <p className="text-red-700 dark:text-red-400 font-bold">Mahasiswa tidak ditemukan</p>
+                  <p className="text-xs text-red-600/70 dark:text-red-500/70 mt-1">Cek kembali nomor registrasi atau ejaan nama</p>
+                </div>
+              )}
+              
+              {!searchResult && (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center text-muted-foreground opacity-50">
+                  <div className="w-16 h-16 rounded-3xl bg-muted/50 flex items-center justify-center mb-4">
+                    <Users className="h-8 w-8" />
+                  </div>
+                  <p className="text-sm font-medium">Mulai dengan mencari nama atau No. Reg</p>
+                </div>
+              )}
+
+              {searchResult?.student && (
+                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="p-5 rounded-3xl bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10 border border-blue-200/20 dark:border-blue-800/20 shadow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 gradient-blue opacity-5 blur-2xl group-hover:opacity-10 transition-opacity" />
+                    <div className="flex items-center gap-4 relative">
+                      <div className="w-14 h-14 rounded-2xl gradient-blue flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <span className="text-white font-extrabold text-xl">
+                          {searchResult.student.first_name[0]}{searchResult.student.last_name[0]}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-extrabold text-lg tracking-tight">{searchResult.student.last_name}, {searchResult.student.first_name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Badge variant="secondary" className="bg-blue-100/50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-none font-bold text-[10px] tracking-wider uppercase">{searchResult.student.no_regis}</Badge>
+                          <span className="text-xs text-muted-foreground font-medium">·</span>
+                          <span className="text-xs text-muted-foreground font-medium">{searchResult.student.major}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="max-h-52 overflow-y-auto rounded-xl border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs font-medium">Event</TableHead>
-                        <TableHead className="text-xs font-medium">Tanggal</TableHead>
-                        <TableHead className="text-xs font-medium text-center">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {searchResult.attendances.length === 0 && (
-                        <TableRow><TableCell colSpan={3} className="text-center text-xs text-muted-foreground py-4">Belum ada data</TableCell></TableRow>
-                      )}
-                      {searchResult.attendances.map((a) => (
-                        <TableRow key={a.id}>
-                          <TableCell className="text-xs py-2 font-medium">{(a as any).meeting?.nama_event ?? '-'}</TableCell>
-                          <TableCell className="text-xs py-2 text-muted-foreground">{(a as any).meeting?.tanggal ?? '-'}</TableCell>
-                          <TableCell className="py-2">
-                            <Select value={a.status} onValueChange={(v) => handleUpdateAttendance(a.id, v as AttendanceStatus)}>
-                              <SelectTrigger className={`h-7 text-xs px-2 rounded-full border-0 mx-auto min-w-[100px] ${STATUS_COLORS[a.status]}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {(['HADIR', 'LATE', 'TIDAK_HADIR'] as AttendanceStatus[]).map((s) => (
-                                  <SelectItem key={s} value={s} className="text-xs">{STATUS_LABELS[s]}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
+                  <div className="rounded-2xl border border-muted/50 overflow-hidden bg-background/30 backdrop-blur-sm">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/30 hover:bg-muted/30 border-none">
+                          <TableHead className="text-[10px] font-bold uppercase tracking-widest h-10">Event</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase tracking-widest h-10 text-center">Status Kehadiran</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {searchResult.attendances.length === 0 && (
+                          <TableRow><TableCell colSpan={2} className="text-center text-xs text-muted-foreground py-10 font-medium">Belum ada riwayat kehadiran</TableCell></TableRow>
+                        )}
+                        {searchResult.attendances.map((a) => (
+                          <TableRow key={a.id} className="hover:bg-muted/20 border-muted/30">
+                            <TableCell className="py-3.5">
+                              <p className="text-sm font-bold tracking-tight">{(a as any).meeting?.nama_event ?? '-'}</p>
+                              <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">{(a as any).meeting?.tanggal ?? '-'}</p>
+                            </TableCell>
+                            <TableCell className="py-3.5 text-center">
+                              <Select value={a.status} onValueChange={(v) => handleUpdateAttendance(a.id, v as AttendanceStatus)}>
+                                <SelectTrigger className={`h-8 text-[11px] font-bold px-3 rounded-full border-none shadow-sm mx-auto min-w-[110px] ${STATUS_COLORS[a.status]}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-none shadow-float">
+                                  {(['HADIR', 'LATE', 'TIDAK_HADIR'] as AttendanceStatus[]).map((s) => (
+                                    <SelectItem key={s} value={s} className="text-xs font-semibold">{STATUS_LABELS[s]}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </CardContent>
         </Card>
 
         {/* Absent More Than */}
-        <Card className="shadow-card border-glow">
-          <CardHeader className="pb-3">
+        <Card className="border-none shadow-card bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col">
+          <CardHeader className="p-6 pb-4">
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <XCircle className="h-4 w-4 text-red-500" />
-                  Absent More Than
-                </CardTitle>
-                <p className="text-xs text-muted-foreground">Cari mahasiswa dengan ketidakhadiran melebihi batas</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl gradient-red flex items-center justify-center shadow-lg shadow-red-500/20">
+                  <XCircle className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-bold tracking-tight">Batas Ketidakhadiran</CardTitle>
+                  <p className="text-sm text-muted-foreground font-medium">Pantau mahasiswa yang sering absen</p>
+                </div>
               </div>
               {absentPivotRows.length > 0 && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger
-                    disabled={exportingAbsent}
-                    className="inline-flex items-center justify-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
-                  >
-                    {exportingAbsent ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="h-3.5 w-3.5" />}
-                    Export
-                    <ChevronDown className="h-3 w-3" />
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="rounded-xl border-none bg-background/50 shadow-sm hover:scale-[1.02] active:scale-[0.98]">
+                      {exportingAbsent ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />}
+                      Export
+                      <ChevronDown className="h-3 w-3 ml-2 opacity-50" />
+                    </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleExportAbsent('xlsx')}>
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />Excel (.xlsx)
+                  <DropdownMenuContent align="end" className="rounded-xl border-none shadow-float min-w-[160px]">
+                    <DropdownMenuItem onClick={() => handleExportAbsent('xlsx')} className="py-2.5 font-medium">
+                      <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />Excel (.xlsx)
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExportAbsent('csv')}>
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />CSV (.csv)
+                    <DropdownMenuItem onClick={() => handleExportAbsent('csv')} className="py-2.5 font-medium">
+                      <FileSpreadsheet className="h-4 w-4 mr-2 text-blue-600" />CSV (.csv)
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex gap-2">
+          <CardContent className="p-6 pt-0 space-y-5 flex-1">
+            <div className="flex gap-3">
               <Input
                 type="number"
                 min={0}
-                placeholder="Masukkan batas (contoh: 3)"
+                placeholder="Contoh: 3 kali absen"
                 value={absentThreshold}
                 onChange={(e) => setAbsentThreshold(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAbsentFilter()}
-                className="h-11"
+                className="h-12 rounded-xl bg-background/50 border-none shadow-inner"
               />
-              <Button onClick={handleAbsentFilter} disabled={loadingAbsent} className="h-11 px-4">
-                {loadingAbsent ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Cari'}
+              <Button onClick={handleAbsentFilter} disabled={loadingAbsent} className="h-12 px-6 rounded-xl gradient-red shadow-lg shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                {loadingAbsent ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Cari'}
               </Button>
             </div>
 
-            {absentPivotRows.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground px-2">
-                  <span>{absentPivotRows.length} mahasiswa dengan absent &gt; {absentThreshold}</span>
-                  <span>{absentMeetings.length} event</span>
-                </div>
-                <div className="overflow-x-auto rounded-xl border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="sticky left-0 bg-muted/50 z-10 font-semibold text-xs w-28">No. Reg</TableHead>
-                        <TableHead className="sticky left-28 bg-muted/50 z-10 font-semibold text-xs min-w-44">Nama</TableHead>
-                        <TableHead className="font-semibold text-xs min-w-32">Prodi</TableHead>
-                        <TableHead className="font-semibold text-xs text-center min-w-20 bg-red-50 dark:bg-red-950/20">Total Absent</TableHead>
-                        {absentMeetings.map(m => (
-                          <TableHead key={m.id} className="px-2 py-2 text-center font-medium text-xs min-w-24">
-                            <div className="truncate max-w-24" title={m.nama_event}>{m.nama_event}</div>
-                            <div className="text-muted-foreground font-normal text-[10px]">{m.tanggal}</div>
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {absentPivotRows.map(row => (
-                        <TableRow key={row.student_id} className="hover:bg-muted/30">
-                          <TableCell className="sticky left-0 bg-white z-10 text-xs font-mono">{row.no_regis}</TableCell>
-                          <TableCell className="sticky left-28 bg-white z-10 text-xs">
-                            <div className="font-medium">{row.last_name}, {row.first_name}</div>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{row.major}</TableCell>
-                          <TableCell className="text-center bg-red-50/50 dark:bg-red-950/10">
-                            <Badge variant="destructive" className="text-xs font-semibold shadow-sm">{row.absent_count}×</Badge>
-                          </TableCell>
-                          {absentMeetings.map(m => {
-                            const status = row.attendance[m.id]
-                            return (
-                              <TableCell key={m.id} className="px-1 py-1 text-center">
-                                {status === '—' ? (
-                                  <span className="text-gray-300 text-xs">—</span>
-                                ) : status === 'TIDAK_HADIR' ? (
-                                  <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${STATUS_BG.TIDAK_HADIR}`}>
-                                    X
-                                  </span>
-                                ) : status === 'LATE' ? (
-                                  <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${STATUS_BG.LATE}`}>
-                                    L
-                                  </span>
-                                ) : (
-                                  <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${STATUS_BG.HADIR}`}>
-                                    H
-                                  </span>
-                                )}
+            <div className="flex-1 min-h-[300px]">
+              {absentPivotRows.length > 0 && (
+                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="flex items-center justify-between px-2">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      Terdeteksi <span className="text-red-500">{absentPivotRows.length} Mahasiswa</span>
+                    </p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      {absentMeetings.length} Total Event
+                    </p>
+                  </div>
+                  <div className="overflow-hidden rounded-2xl border border-muted/50 bg-background/30 backdrop-blur-sm">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30 hover:bg-muted/30 border-none">
+                            <TableHead className="sticky left-0 bg-muted/30 z-20 text-[10px] font-extrabold uppercase tracking-widest h-10 w-28">No. Reg</TableHead>
+                            <TableHead className="sticky left-28 bg-muted/30 z-20 text-[10px] font-extrabold uppercase tracking-widest h-10 min-w-[180px]">Nama Mahasiswa</TableHead>
+                            <TableHead className="text-[10px] font-extrabold uppercase tracking-widest h-10 text-center bg-red-500/10 dark:bg-red-950/20 text-red-600 dark:text-red-400 min-w-[100px]">Total</TableHead>
+                            {absentMeetings.map(m => (
+                              <TableHead key={m.id} className="px-3 text-center h-10 min-w-[100px]">
+                                <p className="text-[10px] font-bold truncate max-w-[80px] mx-auto" title={m.nama_event}>{m.nama_event}</p>
+                                <p className="text-[9px] text-muted-foreground font-medium">{m.tanggal}</p>
+                              </TableHead>
+                            ))}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {absentPivotRows.map(row => (
+                            <TableRow key={row.student_id} className="hover:bg-muted/20 border-muted/30 group">
+                              <TableCell className="sticky left-0 bg-card/90 backdrop-blur-md z-10 text-xs font-bold font-mono py-4 group-hover:bg-muted/10">{row.no_regis}</TableCell>
+                              <TableCell className="sticky left-28 bg-card/90 backdrop-blur-md z-10 py-4 group-hover:bg-muted/10">
+                                <p className="text-sm font-bold tracking-tight">{row.last_name}, {row.first_name}</p>
+                                <p className="text-[10px] text-muted-foreground font-medium">{row.major}</p>
                               </TableCell>
-                            )
-                          })}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                              <TableCell className="text-center bg-red-500/5 dark:bg-red-950/5 py-4">
+                                <Badge className="bg-red-500 hover:bg-red-600 text-white border-none font-bold px-2 py-0.5 shadow-sm shadow-red-500/20">{row.absent_count}×</Badge>
+                              </TableCell>
+                              {absentMeetings.map(m => {
+                                const status = row.attendance[m.id]
+                                return (
+                                  <TableCell key={m.id} className="px-2 py-4 text-center">
+                                    {status === '—' ? (
+                                      <span className="text-muted-foreground/30 font-bold text-xs">—</span>
+                                    ) : (
+                                      <div className={cn(
+                                        "w-7 h-7 rounded-lg flex items-center justify-center mx-auto text-[11px] font-extrabold shadow-sm transition-transform hover:scale-110",
+                                        status === 'TIDAK_HADIR' ? "gradient-red text-white" : 
+                                        status === 'LATE' ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" : 
+                                        "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                                      )}>
+                                        {status === 'TIDAK_HADIR' ? 'X' : status === 'LATE' ? 'L' : 'H'}
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                )
+                              })}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-[10px] font-bold text-muted-foreground px-2 pt-2 uppercase tracking-widest opacity-80">
+                    <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-emerald-100 flex items-center justify-center text-emerald-700">H</span> HADIR</span>
+                    <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-amber-100 flex items-center justify-center text-amber-700">L</span> LATE</span>
+                    <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded gradient-red flex items-center justify-center text-white">X</span> TIDAK HADIR</span>
+                    <span className="flex items-center gap-1.5"><span className="w-4 h-4 text-center">—</span> TIDAK ADA DATA</span>
+                  </div>
                 </div>
-                <div className="flex gap-3 text-xs text-muted-foreground px-2">
-                  <span className="flex items-center gap-1">
-                    <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${STATUS_BG.HADIR}`}>H</span> HADIR
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${STATUS_BG.LATE}`}>L</span> LATE
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${STATUS_BG.TIDAK_HADIR}`}>X</span> TIDAK HADIR
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="text-gray-300 text-xs">—</span> Tidak ada data
-                  </span>
-                </div>
-              </div>
-            )}
+              )}
 
-            {absentThreshold && absentPivotRows.length === 0 && !loadingAbsent && (
-              <div className="p-4 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900">
-                <p className="text-sm text-green-600 dark:text-green-400 text-center font-medium">
-                  Tidak ada mahasiswa dengan absent &gt; {absentThreshold}
-                </p>
-              </div>
-            )}
+              {absentThreshold && absentPivotRows.length === 0 && !loadingAbsent && (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-emerald-50/30 dark:bg-emerald-950/10 rounded-3xl border border-emerald-100/50 dark:border-emerald-900/20">
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
+                    <UserCheck className="h-8 w-8 text-emerald-500 opacity-50" />
+                  </div>
+                  <p className="text-emerald-700 dark:text-emerald-400 font-bold">Semua Aman!</p>
+                  <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 mt-1">Tidak ada mahasiswa yang melebihi batas absen {absentThreshold}</p>
+                </div>
+              )}
+
+              {!absentPivotRows.length && !absentThreshold && (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center text-muted-foreground opacity-50">
+                  <div className="w-16 h-16 rounded-3xl bg-muted/50 flex items-center justify-center mb-4">
+                    <XCircle className="h-8 w-8" />
+                  </div>
+                  <p className="text-sm font-medium">Cek mahasiswa bermasalah dengan batas absen</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
