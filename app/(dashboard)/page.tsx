@@ -102,7 +102,7 @@ export default function DashboardPage() {
   const fetchStats = useCallback(async () => {
     const { count: totalStudents } = await supabase.from('students').select('*', { count: 'exact', head: true })
     const { data: activeSemester } = await supabase.from('semesters').select('id').eq('is_active', true).single()
-    const { count: totalEvents } = await supabase.from('meetings').select('*', { count: 'exact', head: true }).eq('semester_id', activeSemester?.id ?? '')
+    const { count: totalEvents } = await supabase.from('meetings').select('*', { count: 'exact', head: true }).eq('semester_id', activeSemester?.id ?? '').neq('status', 'ARCHIVED')
     const { count: totalHadir } = await supabase.from('attendances').select('*', { count: 'exact', head: true }).eq('status', 'HADIR')
     const { count: totalAttendances } = await supabase.from('attendances').select('*', { count: 'exact', head: true })
 

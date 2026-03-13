@@ -10,10 +10,11 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, Loader2, Link2, QrCode, Eye, Trash2, ExternalLink, KeyRound } from 'lucide-react'
+import { Plus, Loader2, Link2, QrCode, Eye, Trash2, ExternalLink, KeyRound, Archive, ArchiveRestore } from 'lucide-react'
 import { toast } from 'sonner'
 import { hashPin } from '@/lib/hash'
 import { QRCodeSVG as QRCode } from 'qrcode.react'
+import { Switch } from '@/components/ui/switch'
 import type { Meeting, AbsenterGroup, Semester, EventType, EventStatus } from '@/lib/types'
 import { EVENT_TYPE_LABELS, EVENT_STATUS_COLORS } from '@/lib/types'
 
@@ -23,6 +24,7 @@ export default function PertemuanPage() {
   const [meetings, setMeetings] = useState<(Meeting & { absenter_group?: { nama_group: string } | null })[]>([])
   const [groups, setGroups] = useState<AbsenterGroup[]>([])
   const [loading, setLoading] = useState(true)
+  const [showArchived, setShowArchived] = useState(false)
 
   // Dialogs
   const [showCreate, setShowCreate] = useState(false)
@@ -133,7 +135,10 @@ export default function PertemuanPage() {
     { value: 'DRAFT', label: 'Draft' },
     { value: 'AKTIF', label: 'Aktif' },
     { value: 'DITUTUP', label: 'Ditutup' },
+    { value: 'ARCHIVED', label: 'Arsip' },
   ]
+
+  const filteredMeetings = meetings.filter(m => showArchived ? m.status === 'ARCHIVED' : m.status !== 'ARCHIVED')
 
   if (!activeSemester) {
     return (
@@ -151,79 +156,112 @@ export default function PertemuanPage() {
           <h1 className="text-2xl font-bold">Pertemuan / Events</h1>
           <p className="text-sm text-muted-foreground">Kelola event kuliah umum dan link scanner</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" />Event Baru</Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2 bg-muted/50 px-3 py-1.5 rounded-xl border border-border/50">
+            <Switch id="archived-toggle" checked={showArchived} onCheckedChange={setShowArchived} />
+            <Label htmlFor="archived-toggle" className="text-xs font-bold text-muted-foreground cursor-pointer">
+              Lihat Arsip
+            </Label>
+          </div>
+          <Button onClick={() => setShowCreate(true)} className="gradient-primary shadow-lg rounded-xl"><Plus className="h-4 w-4 mr-1" />Event Baru</Button>
+        </div>
       </div>
 
-      <Card>
+      <Card className="border-none shadow-card bg-card/50 backdrop-blur-sm overflow-hidden">
         <CardContent className="p-0">
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
-          ) : meetings.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12">Belum ada event</div>
+          ) : filteredMeetings.length === 0 ? (
+            <div className="text-center text-muted-foreground py-16">
+              <div className="w-16 h-16 bg-muted/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Archive className="h-8 w-8 opacity-20" />
+              </div>
+              <p className="font-medium">{showArchived ? 'Tidak ada event di arsip' : 'Belum ada event aktif'}</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Event</TableHead>
-                    <TableHead>Tipe</TableHead>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Absenter Group</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Scanner</TableHead>
-                    <TableHead className="w-28">Aksi</TableHead>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30 border-none">
+                    <TableHead className="text-[10px] font-bold uppercase tracking-widest h-11">Event</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-widest h-11">Tipe</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-widest h-11">Tanggal</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-widest h-11">Absenter Group</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-widest h-11 text-center">Status</TableHead>
+                    {!showArchived && <TableHead className="text-[10px] font-bold uppercase tracking-widest h-11 text-center">Scanner</TableHead>}
+                    <TableHead className="text-[10px] font-bold uppercase tracking-widest h-11 text-right pr-6 w-32">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {meetings.map((m) => (
-                    <TableRow key={m.id}>
-                      <TableCell className="font-medium">{m.nama_event}</TableCell>
+                  {filteredMeetings.map((m) => (
+                    <TableRow key={m.id} className="hover:bg-muted/20 border-muted/30 transition-colors">
+                      <TableCell className="font-bold tracking-tight py-4">{m.nama_event}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-xs">{EVENT_TYPE_LABELS[m.event_type]}</Badge>
+                        <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-background/50">{EVENT_TYPE_LABELS[m.event_type]}</Badge>
                       </TableCell>
-                      <TableCell className="text-sm">
-                        {m.tanggal}
-                        <div className="text-xs text-muted-foreground">{m.start_time}{m.end_time ? `–${m.end_time}` : ''}</div>
+                      <TableCell className="text-sm py-4">
+                        <p className="font-semibold">{m.tanggal}</p>
+                        <div className="text-[10px] text-muted-foreground font-bold">{m.start_time}{m.end_time ? `–${m.end_time}` : ''}</div>
                       </TableCell>
-                      <TableCell className="text-xs">{(m as any).absenter_group?.nama_group ?? <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-xs font-medium">{(m as any).absenter_group?.nama_group ?? <span className="text-muted-foreground opacity-50">—</span>}</TableCell>
+                      <TableCell className="text-center">
                         <Select value={m.status} onValueChange={(v) => handleStatusChange(m.id, v as EventStatus)}>
-                          <SelectTrigger className={`h-7 text-xs w-28 rounded-full border-0 ${EVENT_STATUS_COLORS[m.status]}`}>
+                          <SelectTrigger className={`h-7 text-[10px] font-bold w-28 rounded-full border-0 mx-auto shadow-sm ${EVENT_STATUS_COLORS[m.status]}`}>
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="rounded-xl border-none shadow-float">
                             {statusOptions.map(o => (
-                              <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
+                              <SelectItem key={o.value} value={o.value} className="text-xs font-semibold">{o.label}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </TableCell>
+                      {!showArchived && (
+                        <TableCell>
+                          <div className="flex gap-1 items-center justify-center">
+                            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-none bg-background/50 shadow-sm hover:scale-105" title="Salin link" onClick={() => copyLink(m.scanner_token)}>
+                              <Link2 className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-none bg-background/50 shadow-sm hover:scale-105" title="QR Code" onClick={() => setQrMeeting(m)}>
+                              <QrCode className="h-3.5 w-3.5" />
+                            </Button>
+                            {m.status === 'AKTIF' && m.scanner_pin && (
+                              <Badge variant="secondary" className="h-8 px-2 bg-blue-500/10 text-blue-600 border-none font-bold text-[10px] gap-1 shadow-sm">
+                                <KeyRound className="h-3 w-3" /> PIN Aktif
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell>
-                        <div className="flex gap-1 items-center">
-                          <Button variant="outline" size="icon" className="h-7 w-7" title="Salin link" onClick={() => copyLink(m.scanner_token)}>
-                            <Link2 className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="outline" size="icon" className="h-7 w-7" title="QR Code" onClick={() => setQrMeeting(m)}>
-                            <QrCode className="h-3.5 w-3.5" />
-                          </Button>
-                          {m.status === 'AKTIF' && m.scanner_pin && (
-                            <span
-                              className="inline-flex items-center gap-1 h-7 px-2 text-xs text-blue-600 bg-blue-50 rounded-md border border-blue-200"
-                              title="PIN aktif (ditampilkan saat aktivasi)"
+                        <div className="flex gap-1 justify-end pr-2">
+                          {m.status === 'DITUTUP' && !showArchived && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg" 
+                              title="Arsipkan" 
+                              onClick={() => handleStatusChange(m.id, 'ARCHIVED')}
                             >
-                              <KeyRound className="h-3 w-3" />
-                              PIN Aktif
-                            </span>
+                              <Archive className="h-4 w-4" />
+                            </Button>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Monitor presensi" onClick={() => window.open(`/presensi/${m.id}`, '_blank')}>
-                            <Eye className="h-3.5 w-3.5" />
+                          {m.status === 'ARCHIVED' && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg" 
+                              title="Buka dari arsip" 
+                              onClick={() => handleStatusChange(m.id, 'DITUTUP')}
+                            >
+                              <ArchiveRestore className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg" title="Monitor presensi" onClick={() => window.open(`/presensi/${m.id}`, '_blank')}>
+                            <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700" onClick={() => setDeleteId(m.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg" title="Hapus permanen" onClick={() => setDeleteId(m.id)}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>

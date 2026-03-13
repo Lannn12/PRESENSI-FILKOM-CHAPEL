@@ -36,7 +36,7 @@ export default function RekapPage() {
   const [loading, setLoading] = useState(true)
 
   const [filterType, setFilterType] = useState<'ALL' | EventType>('ALL')
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'AKTIF' | 'DITUTUP'>('ALL')
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'AKTIF' | 'DITUTUP' | 'ARCHIVED'>('ALL')
   const [filterSearch, setFilterSearch] = useState('')
   const [exporting, setExporting] = useState(false)
   const [savingCell, setSavingCell] = useState<string | null>(null) // "studentId__meetingId"
@@ -50,9 +50,15 @@ export default function RekapPage() {
     if (!activeSemester) return
     setLoading(true)
 
-    let mQuery = supabase.from('meetings').select('*').eq('semester_id', activeSemester.id).in('status', ['AKTIF', 'DITUTUP']).order('tanggal')
+    let mQuery = supabase.from('meetings').select('*').eq('semester_id', activeSemester.id).order('tanggal')
+    
+    if (filterStatus === 'ALL') {
+      mQuery = mQuery.in('status', ['AKTIF', 'DITUTUP'])
+    } else {
+      mQuery = mQuery.eq('status', filterStatus)
+    }
+
     if (filterType !== 'ALL') mQuery = mQuery.eq('event_type', filterType)
-    if (filterStatus !== 'ALL') mQuery = mQuery.eq('status', filterStatus)
     const { data: mData } = await mQuery
     const filteredMeetings = mData ?? []
     setMeetings(filteredMeetings)
@@ -263,6 +269,7 @@ export default function RekapPage() {
             <SelectItem value="ALL">Semua Status</SelectItem>
             <SelectItem value="AKTIF">Aktif</SelectItem>
             <SelectItem value="DITUTUP">Ditutup</SelectItem>
+            <SelectItem value="ARCHIVED">Arsip</SelectItem>
           </SelectContent>
         </Select>
       </div>

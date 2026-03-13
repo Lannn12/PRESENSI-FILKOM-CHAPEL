@@ -1,6 +1,6 @@
 export type Gender = 'MALE' | 'FEMALE'
 export type EventType = 'CHAPEL' | 'FACULTY_DAY' | 'SABBATH'
-export type EventStatus = 'DRAFT' | 'AKTIF' | 'DITUTUP'
+export type EventStatus = 'DRAFT' | 'AKTIF' | 'DITUTUP' | 'ARCHIVED'
 export type AttendanceStatus = 'HADIR' | 'LATE' | 'TIDAK_HADIR'
 
 export interface Semester {
@@ -110,6 +110,7 @@ export const EVENT_STATUS_COLORS: Record<EventStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
   AKTIF: 'bg-green-100 text-green-800',
   DITUTUP: 'bg-blue-100 text-blue-800',
+  ARCHIVED: 'bg-purple-100 text-purple-800',
 }
 
 // ── Student page shared types ─────────────────
