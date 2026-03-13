@@ -7,18 +7,40 @@ export async function GET(req: NextRequest) {
   const limited = rateLimit(req, { maxRequests: 15, windowMs: 60_000, prefix: 'student' })
   if (limited) return limited
 
-  const no_regis = req.nextUrl.searchParams.get('no_regis')
-  if (!no_regis) return NextResponse.json({ error: 'no_regis required.' }, { status: 400 })
+  const queryParam = req.nextUrl.searchParams.get('no_regis') || req.nextUrl.searchParams.get('query')
+  if (!queryParam) return NextResponse.json({ error: 'Parameter query diperlukan.' }, { status: 400 })
 
   const supabase = await createServiceClient()
+  const cleanQuery = queryParam.trim()
 
-  const { data: student } = await supabase
+  // First check if it matches an exact no_regis
+  let { data: students } = await supabase
     .from('students')
     .select('id, no_regis, first_name, last_name, major, gender')
-    .eq('no_regis', no_regis.trim().toUpperCase())
-    .single()
+    .eq('no_regis', cleanQuery.toUpperCase())
 
-  if (!student) return NextResponse.json({ error: 'Mahasiswa tidak ditemukan.' }, { status: 404 })
+  // If no exact match, search by ILIKE for names or no_regis
+  if (!students || students.length === 0) {
+    const { data: searchResults } = await supabase
+      .from('students')
+      .select('id, no_regis, first_name, last_name, major, gender')
+      .or(`no_regis.ilike.%${cleanQuery}%,first_name.ilike.%${cleanQuery}%,last_name.ilike.%${cleanQuery}%`)
+      .limit(10)
+    
+    if (searchResults) students = searchResults
+  }
+
+  if (!students || students.length === 0) {
+    return NextResponse.json({ error: 'Mahasiswa tidak ditemukan.' }, { status: 404 })
+  }
+
+  // If multiple students found, return them as candidates
+  if (students.length > 1) {
+    return NextResponse.json({ candidates: students })
+  }
+
+  // If exactly one student found, return their attendance data
+  const student = students[0]
 
   const { data: attendances } = await supabase
     .from('attendances')

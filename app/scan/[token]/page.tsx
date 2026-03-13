@@ -14,7 +14,8 @@ interface RecentScan {
   status: 'HADIR' | 'LATE'
   waktu_scan: string
   student: { no_regis: string; first_name: string; last_name: string } | null
-  section_title?: string | null
+  section_title: string | null
+  seat_label: string | null
 }
 
 interface MeetingInfo {
@@ -255,6 +256,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
             last_name: (data.student as { last_name: string }).last_name,
           } : null,
           section_title: (data.section_title as string) ?? null,
+          seat_label: (data.seat_label as string) ?? null,
         })
         incrementCount(data.status as 'HADIR' | 'LATE')
       } else if (data.warning) {
@@ -545,9 +547,11 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
                     <p className="text-sm font-medium truncate">{scan.student.last_name}, {scan.student.first_name}</p>
                     <p className="text-xs text-white/50 mt-0.5">
                       {scan.student.no_regis}
-                      {scan.section_title && (
-                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs">
-                          📍 {scan.section_title}
+                      {(scan.section_title || scan.seat_label) && (
+                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-mono">
+                          {scan.section_title ? `📍 ${scan.section_title}` : ''}
+                          {scan.section_title && scan.seat_label ? ' · ' : ''}
+                          {scan.seat_label ? `🪑 ${scan.seat_label}` : ''}
                         </span>
                       )}
                     </p>

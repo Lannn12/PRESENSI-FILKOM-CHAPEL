@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Loader2, Search, BookOpen, User, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { Loader2, Search, BookOpen, User, Users, CheckCircle2, Clock, XCircle } from 'lucide-react'
 import type { EventType, AttendanceStatus, AttendanceStats, AttendanceRow } from '@/lib/types'
 import { EVENT_TYPE_LABELS, STATUS_LABELS } from '@/lib/types'
 
@@ -47,8 +47,9 @@ interface AttRow {
 }
 
 export default function StudentPage() {
-  const [noReg, setNoReg] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
+  const [candidates, setCandidates] = useState<StudentInfo[] | null>(null)
   const [result, setResult] = useState<{
     student: StudentInfo
     stats: AttendanceStats
@@ -56,17 +57,21 @@ export default function StudentPage() {
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleSearch(e?: React.FormEvent) {
+  async function handleSearch(e?: React.FormEvent, directQuery?: string) {
     e?.preventDefault()
-    if (!noReg.trim()) return
+    const query = directQuery || searchQuery
+    if (!query.trim()) return
     setLoading(true)
     setError(null)
     setResult(null)
+    setCandidates(null)
 
-    const res = await fetch(`/api/student?no_regis=${encodeURIComponent(noReg.trim())}`)
+    const res = await fetch(`/api/student?query=${encodeURIComponent(query.trim())}`)
     const data = await res.json()
     if (!res.ok) {
       setError(data.error ?? 'Terjadi kesalahan.')
+    } else if (data.candidates) {
+      setCandidates(data.candidates)
     } else {
       setResult(data)
     }
@@ -95,9 +100,9 @@ export default function StudentPage() {
             <form onSubmit={handleSearch} className="flex gap-2">
               <div className="relative flex-1">
                 <Input
-                  value={noReg}
-                  onChange={(e) => setNoReg(e.target.value)}
-                  placeholder="Masukkan No. Registrasi..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Masukkan No. Registrasi atau Nama..."
                   className="text-base h-12 pl-11 rounded-xl border-border/50 focus:border-primary/50 focus:ring-primary/20"
                   autoCapitalize="off"
                   autoCorrect="off"
@@ -105,7 +110,7 @@ export default function StudentPage() {
                 />
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               </div>
-              <Button type="submit" disabled={loading || !noReg.trim()} className="h-12 px-6 rounded-xl gradient-primary shadow-lg">
+              <Button type="submit" disabled={loading || !searchQuery.trim()} className="h-12 px-6 rounded-xl gradient-primary shadow-lg">
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
               </Button>
             </form>
@@ -113,11 +118,48 @@ export default function StudentPage() {
         </Card>
 
         {error && (
-          <Card className="border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30">
+          <Card className="border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 animate-in fade-in slide-in-from-top-2">
             <CardContent className="py-4">
               <div className="flex items-center gap-3">
                 <XCircle className="h-5 w-5 text-red-500 shrink-0" />
                 <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {candidates && candidates.length > 0 && (
+          <Card className="shadow-card border-glow animate-in fade-in slide-in-from-top-4">
+            <CardHeader className="pb-3 border-b border-border/50 bg-muted/20">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-500" />
+                Ditemukan {candidates.length} Mahasiswa
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-border/50">
+                {candidates.map((cand) => (
+                  <button
+                    key={cand.no_regis}
+                    onClick={() => {
+                      setSearchQuery(cand.no_regis)
+                      handleSearch(undefined, cand.no_regis)
+                    }}
+                    className="w-full text-left flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors focus:outline-none focus:bg-muted"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-sm text-foreground">
+                        {cand.last_name}, {cand.first_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {cand.no_regis} &middot; {cand.major}
+                      </p>
+                    </div>
+                  </button>
+                ))}
               </div>
             </CardContent>
           </Card>
