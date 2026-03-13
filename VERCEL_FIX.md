@@ -1,24 +1,34 @@
-# Fix: Event Status Tidak Bisa Aktif di Vercel
+# Fix: Event Status Tidak Bisa Aktif & PIN Tidak Valid di Vercel
 
 ## ✅ Masalah yang Diperbaiki
 
+### Issue #1: Status Event Tidak Bisa Aktif
 1. **hashPin menggunakan Node.js `crypto`** - Tidak bisa jalan di browser/client-side
 2. **scanner_pin field varchar(6)** - Terlalu pendek untuk hash SHA-256 (64 karakter)
 3. **Verify PIN API** - Masih menggunakan hashPin yang tidak compatible
 
+### Issue #2: PIN Tidak Valid di Scanner
+1. **`/api/scan/route.ts`** - Masih menggunakan `hashPin()` untuk validasi PIN
+2. **Mismatch** - PIN disimpan sebagai plain text tapi divalidasi dengan hash
+
 ## 🔧 Perubahan yang Dilakukan
 
 ### 1. Update `app/(dashboard)/pertemuan/page.tsx`
-- Menghapus penggunaan `hashPin()` 
-- Menyimpan PIN 6-digit sebagai plain text
-- Menambahkan `console.error` untuk debugging
+- ✅ Menghapus penggunaan `hashPin()` 
+- ✅ Menyimpan PIN 6-digit sebagai plain text
+- ✅ Menambahkan `console.error` untuk debugging
 
 ### 2. Update `app/api/scan/verify-pin/route.ts`
-- Menghapus import `hashPin`
-- Compare PIN plain text (tidak di-hash)
+- ✅ Menghapus import `hashPin`
+- ✅ Compare PIN plain text (tidak di-hash)
 
-### 3. Update `supabase/schema.sql`
-- Mengubah `scanner_pin varchar(6)` menjadi `scanner_pin varchar` (tanpa limit)
+### 3. Update `app/api/scan/route.ts` **(FIX BARU!)**
+- ✅ Menghapus import `hashPin`
+- ✅ Validasi PIN menggunakan plain text comparison
+- ✅ PIN yang dimasukkan user langsung dibandingkan dengan scanner_pin di database
+
+### 4. Update `supabase/schema.sql`
+- ✅ Mengubah `scanner_pin varchar(6)` menjadi `scanner_pin varchar` (tanpa limit)
 
 ## 📋 Langkah yang Harus Dilakukan di Supabase
 
