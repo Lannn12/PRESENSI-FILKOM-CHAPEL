@@ -94,7 +94,10 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       // Check if PIN was already verified in this session
       if (needsPin) {
         const savedPin = sessionStorage.getItem(`scan_pin_${token}`)
-        if (savedPin) setPinVerified(true)
+        if (savedPin) {
+          setPinVerified(true)
+          pinRef.current = savedPin // Set PIN ref for barcode scanning
+        }
       } else {
         setPinVerified(true)
       }
@@ -193,12 +196,8 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameraActive])
 
-  // PIN refs for camera callback
+  // PIN refs for camera callback - already loaded in loadMeeting()
   const pinRef = useRef('')
-  useEffect(() => {
-    const saved = sessionStorage.getItem(`scan_pin_${token}`)
-    if (saved) pinRef.current = saved
-  }, [token])
 
   // Verify PIN
   async function handleVerifyPin() {
