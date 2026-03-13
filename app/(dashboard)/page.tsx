@@ -201,7 +201,7 @@ export default function DashboardPage() {
       }
 
       setAbsentMeetings(meetings)
-      const meetingIds = meetings.map(m => m.id)
+      const meetingIds = meetings.map((m: { id: string }) => m.id)
 
       // Get all students
       const { data: students } = await supabase.from('students')
