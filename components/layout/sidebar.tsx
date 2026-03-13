@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   GraduationCap,
+  Link as LinkIcon,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -85,8 +86,20 @@ export default function Sidebar() {
 
       <Separator className="mx-3" />
 
-      {/* Logout */}
-      <div className="p-3">
+      {/* Share and Logout */}
+      <div className="p-3 space-y-2">
+        <Button
+          variant="outline"
+          className="w-full justify-start text-sm font-medium border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-900 dark:hover:bg-blue-900/40 rounded-xl transition-all duration-200"
+          onClick={() => {
+            const url = `${window.location.origin}/student`
+            navigator.clipboard.writeText(url)
+            toast.success('Link portal mahasiswa disalin!')
+          }}
+        >
+          <LinkIcon className="h-4 w-4 mr-3" />
+          Link Portal Mahasiswa
+        </Button>
         <Button
           variant="ghost"
           className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all duration-200"
