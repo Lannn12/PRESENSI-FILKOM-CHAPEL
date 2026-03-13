@@ -51,8 +51,8 @@ export default function StudentPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{
     student: StudentInfo
-    stats: Stats
-    attendances: AttRow[]
+    stats: AttendanceStats
+    attendances: AttendanceRow[]
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
 

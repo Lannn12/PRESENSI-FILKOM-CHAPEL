@@ -111,3 +111,32 @@ export const EVENT_STATUS_COLORS: Record<EventStatus, string> = {
   AKTIF: 'bg-green-100 text-green-800',
   DITUTUP: 'bg-blue-100 text-blue-800',
 }
+
+// ── Student page shared types ─────────────────
+
+export interface StudentInfo {
+  no_regis: string
+  first_name: string
+  last_name: string
+  major: string
+  gender: string
+}
+
+export interface AttendanceStats {
+  total: number
+  hadir: number
+  late: number
+  tidak_hadir: number
+}
+
+export interface AttendanceRow {
+  id: string
+  status: AttendanceStatus
+  waktu_scan: string | null
+  meeting: {
+    nama_event: string
+    tanggal: string
+    event_type: EventType
+    status: string
+  } | null
+}

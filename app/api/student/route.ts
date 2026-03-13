@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function GET(req: NextRequest) {
+  // Rate limit: 15 requests per 60 seconds
+  const limited = rateLimit(req, { maxRequests: 15, windowMs: 60_000, prefix: 'student' })
+  if (limited) return limited
 
   const no_regis = req.nextUrl.searchParams.get('no_regis')
   if (!no_regis) return NextResponse.json({ error: 'no_regis required.' }, { status: 400 })
@@ -22,10 +26,10 @@ export async function GET(req: NextRequest) {
     .eq('student_id', student.id)
     .order('created_at', { ascending: false })
 
-  const closed = (attendances ?? []).filter((a: any) => a.meeting?.status === 'DITUTUP')
-  const hadir = closed.filter((a: any) => a.status === 'HADIR').length
-  const late = closed.filter((a: any) => a.status === 'LATE').length
-  const tidak_hadir = closed.filter((a: any) => a.status === 'TIDAK_HADIR').length
+  const closed = (attendances ?? []).filter((a: Record<string, unknown>) => (a.meeting as Record<string, unknown>)?.status === 'DITUTUP')
+  const hadir = closed.filter((a: Record<string, unknown>) => a.status === 'HADIR').length
+  const late = closed.filter((a: Record<string, unknown>) => a.status === 'LATE').length
+  const tidak_hadir = closed.filter((a: Record<string, unknown>) => a.status === 'TIDAK_HADIR').length
 
   return NextResponse.json({
     student: {

@@ -57,7 +57,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mee
     await supabase.from('meetings').update({ status: 'DITUTUP' }).eq('id', meetingId)
 
     return NextResponse.json({ success: true, absent_inserted: missing.length })
-  } catch {
+  } catch (err) {
+    console.error('[API /api/meetings/close POST]', err)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
   }
 }

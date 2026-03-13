@@ -46,7 +46,7 @@ export default function SeatingPage() {
 
   useEffect(() => {
     supabase.from('semesters').select('*').eq('is_active', true).single()
-      .then(({ data }) => setActiveSemester(data))
+      .then(({ data }: { data: Semester | null }) => setActiveSemester(data))
   }, [supabase])
 
   const fetchSections = useCallback(async () => {
@@ -61,10 +61,10 @@ export default function SeatingPage() {
     setSections(secs ?? [])
 
     // Compute counters
-    const maleCap = (secs ?? []).filter(s => s.gender === 'MALE').reduce((a, s) => a + s.capacity, 0)
-    const femaleCap = (secs ?? []).filter(s => s.gender === 'FEMALE').reduce((a, s) => a + s.capacity, 0)
-    const maleAss = (assigns ?? []).filter((a: any) => a.student?.gender === 'MALE').length
-    const femaleAss = (assigns ?? []).filter((a: any) => a.student?.gender === 'FEMALE').length
+    const maleCap = (secs ?? []).filter((s: Section) => s.gender === 'MALE').reduce((a: number, s: Section) => a + s.capacity, 0)
+    const femaleCap = (secs ?? []).filter((s: Section) => s.gender === 'FEMALE').reduce((a: number, s: Section) => a + s.capacity, 0)
+    const maleAss = (assigns ?? []).filter((a: { student?: { gender: string } }) => a.student?.gender === 'MALE').length
+    const femaleAss = (assigns ?? []).filter((a: { student?: { gender: string } }) => a.student?.gender === 'FEMALE').length
     setGenderCounts({
       male: { assigned: maleAss, cap: maleCap, total: maleTotal ?? 0 },
       female: { assigned: femaleAss, cap: femaleCap, total: femaleTotal ?? 0 },
@@ -197,7 +197,7 @@ export default function SeatingPage() {
       supabase.from('student_sections').select('student_id').eq('section_id', section.id).eq('semester_id', activeSemester!.id),
     ])
     setAllStudents(studs ?? [])
-    setAssignedIds(new Set((assigns ?? []).map(a => a.student_id)))
+    setAssignedIds(new Set((assigns ?? []).map((a: { student_id: string }) => a.student_id)))
     setLoadingAssign(false)
   }
 

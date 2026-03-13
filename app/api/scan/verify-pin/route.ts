@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/rate-limit'
+import { hashPin } from '@/lib/hash'
 
 export async function POST(req: NextRequest) {
+  // Strict rate limit: 5 requests per 60 seconds (PIN brute-force protection)
+  const limited = rateLimit(req, { maxRequests: 5, windowMs: 60_000, prefix: 'verify-pin' })
+  if (limited) return limited
+
   try {
     const { token, pin } = await req.json()
     if (!token || !pin) {
@@ -24,12 +30,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ valid: true })
     }
 
-    if (meeting.scanner_pin !== pin) {
+    // Compare hashed PIN input with stored hash
+    if (meeting.scanner_pin !== hashPin(pin)) {
       return NextResponse.json({ error: 'PIN tidak valid.' }, { status: 403 })
     }
 
     return NextResponse.json({ valid: true })
-  } catch {
+  } catch (err) {
+    console.error('[API /api/scan/verify-pin POST]', err)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
   }
 }

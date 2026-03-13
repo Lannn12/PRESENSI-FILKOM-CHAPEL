@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/rate-limit'
+import { hashPin } from '@/lib/hash'
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 20 requests per 60 seconds
+  const limited = rateLimit(req, { maxRequests: 20, windowMs: 60_000, prefix: 'scan-post' })
+  if (limited) return limited
+
   try {
     const { token, no_regis, is_late, pin } = await req.json()
     if (!token || !no_regis) {
@@ -23,8 +29,8 @@ export async function POST(req: NextRequest) {
     if (meeting.status !== 'AKTIF') {
       return NextResponse.json({ error: `Event berstatus ${meeting.status}. Presensi tidak dapat direkam.` }, { status: 403 })
     }
-    // Validate PIN if the meeting has one
-    if (meeting.scanner_pin && meeting.scanner_pin !== pin) {
+    // Validate PIN if the meeting has one (compare hashed values)
+    if (meeting.scanner_pin && meeting.scanner_pin !== hashPin(pin ?? '')) {
       return NextResponse.json({ error: 'PIN tidak valid.' }, { status: 403 })
     }
 
@@ -99,12 +105,17 @@ export async function POST(req: NextRequest) {
       status,
       section_title,
     })
-  } catch {
+  } catch (err) {
+    console.error('[API /api/scan POST]', err)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
   }
 }
 
 export async function GET(req: NextRequest) {
+  // Rate limit: 30 requests per 60 seconds
+  const limited = rateLimit(req, { maxRequests: 30, windowMs: 60_000, prefix: 'scan-get' })
+  if (limited) return limited
+
   const token = req.nextUrl.searchParams.get('token')
   if (!token) return NextResponse.json({ error: 'Token required.' }, { status: 400 })
 
