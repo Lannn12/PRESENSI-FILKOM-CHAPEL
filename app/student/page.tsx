@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Loader2, Search, BookOpen, User, CheckCircle2, Clock, XCircle } from 'lucide-react'
-import type { EventType, AttendanceStatus } from '@/lib/types'
+import type { EventType, AttendanceStatus, AttendanceStats, AttendanceRow } from '@/lib/types'
 import { EVENT_TYPE_LABELS, STATUS_LABELS } from '@/lib/types'
 
 const STATUS_COLORS: Record<AttendanceStatus, string> = {
