@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
-import { hashPin } from '@/lib/hash'
 
 export async function POST(req: NextRequest) {
   // Rate limit: 20 requests per 60 seconds
@@ -29,8 +28,8 @@ export async function POST(req: NextRequest) {
     if (meeting.status !== 'AKTIF') {
       return NextResponse.json({ error: `Event berstatus ${meeting.status}. Presensi tidak dapat direkam.` }, { status: 403 })
     }
-    // Validate PIN if the meeting has one (compare hashed values)
-    if (meeting.scanner_pin && meeting.scanner_pin !== hashPin(pin ?? '')) {
+    // Validate PIN if the meeting has one (compare plain text PIN)
+    if (meeting.scanner_pin && meeting.scanner_pin !== (pin ?? '')) {
       return NextResponse.json({ error: 'PIN tidak valid.' }, { status: 403 })
     }
 
