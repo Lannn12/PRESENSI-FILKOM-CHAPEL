@@ -64,6 +64,7 @@ create table public.sections (
   title varchar not null,
   gender varchar not null check (gender in ('MALE', 'FEMALE')),
   capacity integer not null default 0,
+  columns_per_row integer not null default 4,
   "order" integer not null default 0,
   deskripsi text,
   created_at timestamptz not null default now()
@@ -74,6 +75,7 @@ create table public.student_sections (
   semester_id uuid not null references public.semesters (id) on delete cascade,
   student_id uuid not null references public.students (id) on delete cascade,
   section_id uuid not null references public.sections (id) on delete cascade,
+  seat_number integer,
   created_at timestamptz not null default now(),
   unique (semester_id, student_id)
 );

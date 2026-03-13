@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
+import { getSeatLabel } from '@/lib/seat-utils'
 
 export async function POST(req: NextRequest) {
   // Rate limit: 20 requests per 60 seconds
@@ -71,14 +72,21 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       let section_title: string | null = null
+      let seat_number: number | null = null
+      let seat_label: string | null = null
       const { data: seatData } = await supabase
         .from('student_sections')
-        .select('section:sections(title)')
+        .select('seat_number, section:sections(title, columns_per_row)')
         .eq('student_id', student.id)
         .eq('semester_id', meeting.semester_id)
         .single()
       if (seatData?.section && typeof seatData.section === 'object' && 'title' in seatData.section) {
-        section_title = (seatData.section as { title: string }).title
+        const sec = seatData.section as unknown as { title: string; columns_per_row: number }
+        section_title = sec.title
+        if (seatData.seat_number) {
+          seat_number = seatData.seat_number
+          seat_label = getSeatLabel(seatData.seat_number, sec.title, sec.columns_per_row)
+        }
       }
 
       return NextResponse.json({
@@ -86,6 +94,8 @@ export async function POST(req: NextRequest) {
         message: `${student.last_name}, ${student.first_name} sudah tercatat sebagai ${existing.status}.`,
         student,
         section_title,
+        seat_number,
+        seat_label,
       })
     }
 
@@ -104,14 +114,21 @@ export async function POST(req: NextRequest) {
 
     // Lookup student's seating section for this semester
     let section_title: string | null = null
+    let seat_number: number | null = null
+    let seat_label: string | null = null
     const { data: seatData } = await supabase
       .from('student_sections')
-      .select('section:sections(title)')
+      .select('seat_number, section:sections(title, columns_per_row)')
       .eq('student_id', student.id)
       .eq('semester_id', meeting.semester_id)
       .single()
     if (seatData?.section && typeof seatData.section === 'object' && 'title' in seatData.section) {
-      section_title = (seatData.section as { title: string }).title
+      const sec = seatData.section as unknown as { title: string; columns_per_row: number }
+      section_title = sec.title
+      if (seatData.seat_number) {
+        seat_number = seatData.seat_number
+        seat_label = getSeatLabel(seatData.seat_number, sec.title, sec.columns_per_row)
+      }
     }
 
     return NextResponse.json({
@@ -120,6 +137,8 @@ export async function POST(req: NextRequest) {
       student,
       status,
       section_title,
+      seat_number,
+      seat_label,
     })
   } catch (err) {
     console.error('[API /api/scan POST]', err)

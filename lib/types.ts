@@ -43,6 +43,7 @@ export interface Section {
   title: string
   gender: Gender
   capacity: number
+  columns_per_row: number
   order: number
   deskripsi: string | null
   created_at: string
@@ -54,6 +55,7 @@ export interface StudentSection {
   semester_id: string
   student_id: string
   section_id: string
+  seat_number: number | null
   created_at: string
   student?: Student
   section?: Section

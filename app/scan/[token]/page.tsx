@@ -242,7 +242,8 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       setSubmitting(false)
 
       if (data.success) {
-        const sectionLabel = data.section_title ? ` · 📍${data.section_title}` : ''
+        const seatInfo = data.seat_label ? ` · 🪑${data.seat_label}` : ''
+        const sectionLabel = data.section_title ? ` · 📍${data.section_title}${seatInfo}` : ''
         setFeedback({ type: 'success', message: `${data.message as string}${sectionLabel}` })
         addRecentScan({
           id: Date.now().toString(),
@@ -257,7 +258,8 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
         })
         incrementCount(data.status as 'HADIR' | 'LATE')
       } else if (data.warning) {
-        const sectionLabel = data.section_title ? ` · 📍${data.section_title}` : ''
+        const seatInfo = data.seat_label ? ` · 🪑${data.seat_label}` : ''
+        const sectionLabel = data.section_title ? ` · 📍${data.section_title}${seatInfo}` : ''
         setFeedback({ type: 'warning', message: `${data.message as string}${sectionLabel}` })
       } else {
         setFeedback({ type: 'error', message: (data.error as string) ?? 'Terjadi kesalahan.' })
