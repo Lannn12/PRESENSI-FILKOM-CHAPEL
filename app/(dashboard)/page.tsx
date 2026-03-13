@@ -19,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { FileSpreadsheet, ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import * as XLSX from 'xlsx'
 
 interface ChartData {
