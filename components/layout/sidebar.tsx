@@ -45,20 +45,20 @@ export default function Sidebar() {
   const NavContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-5">
-        <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
-          <span className="text-white font-bold text-base">F</span>
+      <div className="flex items-center gap-3 px-5 py-5">
+        <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shrink-0 shadow-lg">
+          <span className="text-white font-bold text-lg">F</span>
         </div>
-        <div>
-          <p className="font-bold text-sm leading-tight">Presensi FILKOM</p>
+        <div className="flex-1">
+          <p className="font-bold text-sm leading-tight text-gradient-primary">Presensi FILKOM</p>
           <p className="text-xs text-muted-foreground">Kuliah Umum / Chapel</p>
         </div>
       </div>
 
-      <Separator />
+      <Separator className="mx-3" />
 
       {/* Nav Items */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/' && pathname.startsWith(href))
           return (
@@ -67,26 +67,29 @@ export default function Sidebar() {
               href={href}
               onClick={() => setOpen(false)}
               className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group',
                 active
-                  ? 'bg-blue-600 text-white'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  ? 'gradient-primary text-white shadow-md'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:translate-x-0.5'
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon className={cn("h-4 w-4 shrink-0 transition-transform duration-200", active && "scale-110")} />
               {label}
+              {active && (
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />
+              )}
             </Link>
           )
         })}
       </nav>
 
-      <Separator />
+      <Separator className="mx-3" />
 
       {/* Logout */}
       <div className="p-3">
         <Button
           variant="ghost"
-          className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all duration-200"
           onClick={handleLogout}
         >
           <LogOut className="h-4 w-4 mr-3" />
@@ -99,19 +102,19 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-60 border-r bg-background h-screen sticky top-0 shrink-0">
+      <aside className="hidden md:flex flex-col w-64 border-r bg-background h-screen sticky top-0 shrink-0 shadow-float">
         <NavContent />
       </aside>
 
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 border-b bg-background">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 border-b bg-background/80 backdrop-blur-xl">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center">
-            <span className="text-white font-bold text-xs">F</span>
+          <div className="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-sm">F</span>
           </div>
-          <span className="font-bold text-sm">Presensi FILKOM</span>
+          <span className="font-bold text-sm text-gradient-primary">Presensi FILKOM</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setOpen(!open)}>
+        <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="rounded-lg">
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
       </div>
@@ -119,13 +122,13 @@ export default function Sidebar() {
       {/* Mobile sidebar overlay */}
       {open && (
         <div
-          className="md:hidden fixed inset-0 z-40 bg-black/40"
+          className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setOpen(false)}
         />
       )}
       <aside
         className={cn(
-          'md:hidden fixed top-0 left-0 z-50 h-full w-64 bg-background border-r shadow-lg transition-transform duration-200',
+          'md:hidden fixed top-0 left-0 z-50 h-full w-72 bg-background border-r shadow-2xl transition-transform duration-300 ease-out',
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
