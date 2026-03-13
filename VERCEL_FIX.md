@@ -7,9 +7,13 @@
 2. **scanner_pin field varchar(6)** - Terlalu pendek untuk hash SHA-256 (64 karakter)
 3. **Verify PIN API** - Masih menggunakan hashPin yang tidak compatible
 
-### Issue #2: PIN Tidak Valid di Scanner
+### Issue #2: PIN Tidak Valid di Scanner (Manual Input)
 1. **`/api/scan/route.ts`** - Masih menggunakan `hashPin()` untuk validasi PIN
 2. **Mismatch** - PIN disimpan sebagai plain text tapi divalidasi dengan hash
+
+### Issue #3: PIN Tidak Valid Saat Scan Barcode/ID Card **(FIX BARU!)**
+1. **pinRef tidak di-load dari sessionStorage** - PIN yang sudah di-verify tidak otomatis terisi ke ref
+2. **Barcode scanner mengirim empty PIN** - Karena pinRef.current = '', scan barcode gagal dengan "PIN tidak valid"
 
 ## 🔧 Perubahan yang Dilakukan
 
@@ -22,12 +26,17 @@
 - ✅ Menghapus import `hashPin`
 - ✅ Compare PIN plain text (tidak di-hash)
 
-### 3. Update `app/api/scan/route.ts` **(FIX BARU!)**
+### 3. Update `app/api/scan/route.ts` **(FIX!)**
 - ✅ Menghapus import `hashPin`
 - ✅ Validasi PIN menggunakan plain text comparison
 - ✅ PIN yang dimasukkan user langsung dibandingkan dengan scanner_pin di database
 
-### 4. Update `supabase/schema.sql`
+### 4. Update `app/scan/[token]/page.tsx` **(FIX BARU!)**
+- ✅ Load PIN dari sessionStorage ke `pinRef.current` di `loadMeeting()`
+- ✅ Memastikan barcode scanner bisa mengirim PIN yang benar
+- ✅ PIN otomatis terisi setelah verifikasi pertama
+
+### 5. Update `supabase/schema.sql`
 - ✅ Mengubah `scanner_pin varchar(6)` menjadi `scanner_pin varchar` (tanpa limit)
 
 ## 📋 Langkah yang Harus Dilakukan di Supabase
