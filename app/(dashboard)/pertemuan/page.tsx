@@ -85,10 +85,14 @@ export default function PertemuanPage() {
     const updateData: Record<string, unknown> = { status: newStatus }
     if (newStatus === 'AKTIF') {
       const pin = String(Math.floor(100000 + Math.random() * 900000))
-      // Store hashed PIN in database, show plain PIN to admin via toast
-      updateData.scanner_pin = hashPin(pin)
+      // Store plain PIN in database (for absenter verification)
+      updateData.scanner_pin = pin
       const { error } = await supabase.from('meetings').update(updateData).eq('id', meetingId)
-      if (error) { toast.error('Gagal update status: ' + error.message); return }
+      if (error) { 
+        console.error('Failed to update status:', error)
+        toast.error('Gagal update status: ' + error.message)
+        return 
+      }
       toast.success(`Event diaktifkan! PIN Absenter: ${pin}`, { duration: 10000 })
       fetchAll()
       return
@@ -96,7 +100,11 @@ export default function PertemuanPage() {
       updateData.scanner_pin = null
     }
     const { error } = await supabase.from('meetings').update(updateData).eq('id', meetingId)
-    if (error) { toast.error('Gagal update status: ' + error.message); return }
+    if (error) { 
+      console.error('Failed to update status:', error)
+      toast.error('Gagal update status: ' + error.message)
+      return 
+    }
     toast.success('Status diperbarui')
     fetchAll()
   }

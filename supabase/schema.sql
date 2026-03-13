@@ -92,8 +92,8 @@ create table public.meetings (
   end_time time,           -- nullable: some events don't have a fixed end time
   deskripsi text,
   scanner_token varchar not null unique default gen_random_uuid()::text,
-  scanner_pin varchar(6),  -- 6-digit PIN for absenter authentication
-  status varchar not null default 'DRAFT' check (status in ('DRAFT', 'AKTIF', 'DITUTUP')),
+  scanner_pin varchar,     -- PIN for absenter authentication (6-digit or hashed)
+  status varchar(10) not null default 'DRAFT' check (status in ('DRAFT', 'AKTIF', 'DITUTUP')),
   created_at timestamptz not null default now()
 );
 
@@ -107,7 +107,7 @@ create table public.attendances (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references public.students (id) on delete cascade,
   meeting_id uuid not null references public.meetings (id) on delete cascade,
-  status varchar not null check (status in ('HADIR', 'LATE', 'TIDAK_HADIR')),
+  status varchar(12) not null check (status in ('HADIR', 'LATE', 'TIDAK_HADIR')),
   waktu_scan timestamptz,
   catatan text,
   created_at timestamptz not null default now(),

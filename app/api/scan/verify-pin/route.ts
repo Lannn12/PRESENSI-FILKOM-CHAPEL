@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
-import { hashPin } from '@/lib/hash'
 
 export async function POST(req: NextRequest) {
   // Strict rate limit: 5 requests per 60 seconds (PIN brute-force protection)
@@ -30,8 +29,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ valid: true })
     }
 
-    // Compare hashed PIN input with stored hash
-    if (meeting.scanner_pin !== hashPin(pin)) {
+    // Compare plain PIN (6-digit)
+    if (meeting.scanner_pin !== pin) {
       return NextResponse.json({ error: 'PIN tidak valid.' }, { status: 403 })
     }
 
