@@ -595,7 +595,7 @@ export default function DashboardPage() {
               </div>
               {absentPivotRows.length > 0 && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                  <DropdownMenuTrigger>
                     <Button variant="outline" size="sm" className="rounded-xl border-none bg-background/50 shadow-sm hover:scale-[1.02] active:scale-[0.98]">
                       {exportingAbsent ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />}
                       Export
