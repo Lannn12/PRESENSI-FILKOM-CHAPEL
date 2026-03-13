@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showSplash, setShowSplash] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false)
+    }, 2500)
+    return () => clearTimeout(timer)
+  }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -33,15 +41,55 @@ export default function LoginPage() {
     router.refresh()
   }
 
+  if (showSplash) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-hero relative overflow-hidden">
+        {/* Animated background shapes */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+        
+        <div className="relative z-10 text-center space-y-8 animate-in fade-in zoom-in duration-700">
+          <div className="flex justify-center">
+            <div className="w-24 h-24 gradient-primary rounded-[2rem] flex items-center justify-center shadow-[0_0_50px_rgba(168,85,247,0.4)] animate-bounce-gentle">
+              <GraduationCap className="w-14 h-14 text-white" />
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <h1 className="text-5xl font-black text-white tracking-tighter drop-shadow-2xl">
+              PRESENSI <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-100">FILKOM</span>
+            </h1>
+            <div className="flex items-center justify-center gap-2">
+              <div className="h-[2px] w-8 bg-gradient-to-r from-transparent to-white/50" />
+              <p className="text-white/70 text-sm font-medium tracking-[0.2em] uppercase">
+                Kuliah Umum & Chapel
+              </p>
+              <div className="h-[2px] w-8 bg-gradient-to-l from-transparent to-white/50" />
+            </div>
+          </div>
+
+          <div className="pt-10 flex flex-col items-center gap-3">
+            <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-white animate-progress-loading origin-left" />
+            </div>
+            <p className="text-white/40 text-[10px] font-bold tracking-widest uppercase">
+              Initializing Secure Session
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center gradient-hero p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center gradient-hero p-4 relative overflow-hidden animate-in fade-in duration-1000">
       {/* Animated background shapes */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-3xl animate-pulse delay-500" />
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/15 rounded-full blur-3xl animate-pulse delay-700" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl animate-pulse delay-300" />
       </div>
 
       {/* Grid pattern overlay */}

@@ -197,4 +197,32 @@
   .border-glow:hover::after {
     @apply opacity-100;
   }
+
+  @keyframes bounce-gentle {
+    0%, 100% {
+      transform: translateY(-5%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+
+  .animate-bounce-gentle {
+    animation: bounce-gentle 2s infinite;
+  }
+
+  @keyframes progress-loading {
+    0% {
+      transform: scaleX(0);
+    }
+    100% {
+      transform: scaleX(1);
+    }
+  }
+
+  .animate-progress-loading {
+    animation: progress-loading 2.5s ease-out forwards;
+  }
 }
