@@ -83,7 +83,8 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       let data: Record<string, unknown>
       try { data = await res.json() } catch { data = {} }
       if (!res.ok) {
-        setInitError((data.error as string) ?? `Server error (${res.status}). Cek env var Supabase di Vercel.`)
+        const debugInfo = data.debug ? ` [${(data.debug as Record<string, unknown>).code}: ${(data.debug as Record<string, unknown>).message}]` : ''
+        setInitError(((data.error as string) ?? `Server error (${res.status})`) + debugInfo)
         setLoadingInit(false)
         return
       }

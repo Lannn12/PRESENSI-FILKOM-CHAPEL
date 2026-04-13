@@ -157,12 +157,19 @@ export async function GET(req: NextRequest) {
   // Validate env vars — common cause of 404 on Vercel
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json(
-      { error: 'Konfigurasi server belum lengkap. Pastikan env var Supabase sudah diset di Vercel.' },
+      { error: `Konfigurasi server belum lengkap. URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL ? 'OK' : 'MISSING'}, SERVICE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'OK' : 'MISSING'}` },
       { status: 503 }
     )
   }
 
-  const supabase = await createServiceClient()
+  let supabase
+  try {
+    supabase = await createServiceClient()
+  } catch (err) {
+    console.error('[API /api/scan GET] createServiceClient error:', err)
+    return NextResponse.json({ error: 'Gagal membuat koneksi database.' }, { status: 500 })
+  }
+
   const { data: meeting, error: meetErr } = await supabase
     .from('meetings')
     .select('id, nama_event, tanggal, start_time, end_time, status, event_type, scanner_pin')
@@ -170,12 +177,22 @@ export async function GET(req: NextRequest) {
     .single()
 
   if (meetErr || !meeting) {
-    // Distinguish between "token not found" vs Supabase connection error
-    const isConnErr = meetErr && (meetErr.code === 'PGRST301' || meetErr.message?.includes('fetch'))
+    console.error('[API /api/scan GET] Meeting lookup failed:', {
+      token,
+      errorCode: meetErr?.code,
+      errorMessage: meetErr?.message,
+      errorDetails: meetErr?.details,
+      errorHint: meetErr?.hint,
+    })
     return NextResponse.json(
-      { error: isConnErr
-          ? 'Gagal konek ke database. Cek env var SUPABASE di Vercel.'
-          : 'Token scanner tidak valid atau event tidak ditemukan.'
+      { 
+        error: 'Token scanner tidak valid atau event tidak ditemukan.',
+        debug: {
+          code: meetErr?.code ?? 'no_error_code',
+          message: meetErr?.message ?? 'no_error_message',
+          hint: meetErr?.hint ?? null,
+          token_received: token ? `${token.substring(0, 8)}...` : 'empty',
+        }
       },
       { status: 404 }
     )
