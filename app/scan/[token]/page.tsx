@@ -83,7 +83,11 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       let data: Record<string, unknown>
       try { data = await res.json() } catch { data = {} }
       if (!res.ok) {
-        const debugInfo = data.debug ? ` [${(data.debug as Record<string, unknown>).code}: ${(data.debug as Record<string, unknown>).message}]` : ''
+        let debugInfo = ''
+        if (data.debug) {
+          const d = data.debug as Record<string, unknown>
+          debugInfo = ` [${d.code}: ${d.message}] (Total meetings: ${d.total_meetings_in_db}, Token: ${d.token_received})`
+        }
         setInitError(((data.error as string) ?? `Server error (${res.status})`) + debugInfo)
         setLoadingInit(false)
         return

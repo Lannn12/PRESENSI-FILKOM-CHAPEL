@@ -177,12 +177,22 @@ export async function GET(req: NextRequest) {
     .single()
 
   if (meetErr || !meeting) {
+    // Diagnostic: check how many meetings exist and their tokens
+    const { count: totalMeetings } = await supabase
+      .from('meetings')
+      .select('*', { count: 'exact', head: true })
+    
+    const { data: allTokens } = await supabase
+      .from('meetings')
+      .select('scanner_token, nama_event, status')
+      .limit(5)
+
     console.error('[API /api/scan GET] Meeting lookup failed:', {
       token,
+      totalMeetings,
+      existingTokens: allTokens?.map(t => ({ token: t.scanner_token?.substring(0, 8) + '...', event: t.nama_event, status: t.status })),
       errorCode: meetErr?.code,
       errorMessage: meetErr?.message,
-      errorDetails: meetErr?.details,
-      errorHint: meetErr?.hint,
     })
     return NextResponse.json(
       { 
@@ -190,8 +200,9 @@ export async function GET(req: NextRequest) {
         debug: {
           code: meetErr?.code ?? 'no_error_code',
           message: meetErr?.message ?? 'no_error_message',
-          hint: meetErr?.hint ?? null,
-          token_received: token ? `${token.substring(0, 8)}...` : 'empty',
+          total_meetings_in_db: totalMeetings ?? 0,
+          existing_events: allTokens?.map(t => ({ name: t.nama_event, status: t.status, token_prefix: t.scanner_token?.substring(0, 12) })) ?? [],
+          token_received: token ?? 'empty',
         }
       },
       { status: 404 }
