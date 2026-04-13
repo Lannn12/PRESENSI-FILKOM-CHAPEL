@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { rateLimit } from '@/lib/rate-limit'
+
+function getServiceSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(req: NextRequest) {
   // Strict rate limit: 5 requests per 60 seconds (PIN brute-force protection)
@@ -13,7 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Token dan PIN wajib diisi.' }, { status: 400 })
     }
 
-    const supabase = await createServiceClient()
+    const supabase = getServiceSupabase()
     const { data: meeting, error } = await supabase
       .from('meetings')
       .select('id, scanner_pin')

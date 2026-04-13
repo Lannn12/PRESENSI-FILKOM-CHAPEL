@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { rateLimit } from '@/lib/rate-limit'
 import { getSeatLabel } from '@/lib/seat-utils'
+
+// Gunakan createClient langsung (bukan SSR) agar bypass RLS tanpa masalah cookies
+function getServiceSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(req: NextRequest) {
   // Rate limit: 20 requests per 60 seconds
@@ -14,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Token dan no_regis wajib diisi.' }, { status: 400 })
     }
 
-    const supabase = await createServiceClient()
+    const supabase = getServiceSupabase()
 
     // Validate token & get meeting
     const { data: meeting, error: meetErr } = await supabase
@@ -162,13 +170,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  let supabase
-  try {
-    supabase = await createServiceClient()
-  } catch (err) {
-    console.error('[API /api/scan GET] createServiceClient error:', err)
-    return NextResponse.json({ error: 'Gagal membuat koneksi database.' }, { status: 500 })
-  }
+  const supabase = getServiceSupabase()
 
   const { data: meeting, error: meetErr } = await supabase
     .from('meetings')
