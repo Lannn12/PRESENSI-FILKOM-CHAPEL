@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Presensi FILKOM",
-  description: "Sistem Presensi Kuliah Umum / Chapel FILKOM",
+  title: "Presensi FILKOM — Universitas Klabat",
+  description: "Sistem Presensi Kuliah Umum & Chapel FILKOM Universitas Klabat",
+  keywords: ["presensi", "filkom", "kuliah umum", "chapel", "universitas klabat"],
 };
 
 export default function RootLayout({
@@ -20,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className={`${geistSans.variable} antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         {children}
         <Toaster richColors position="top-right" />
       </body>
