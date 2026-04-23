@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { CheckCircle2, XCircle, AlertCircle, Loader2, Clock, ScanLine, Camera, CameraOff, Lock, Users } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertCircle, Loader2, Clock, ScanLine, Camera, CameraOff, Lock, Users, BookOpen } from 'lucide-react'
 
 interface RecentScan {
   id: string
@@ -39,6 +39,8 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   const [recentScans, setRecentScans] = useState<RecentScan[]>([])
   const [loadingInit, setLoadingInit] = useState(true)
   const [initError, setInitError] = useState<string | null>(null)
+  const [showSplash, setShowSplash] = useState(true)
+  const [splashMinDone, setSplashMinDone] = useState(false)
 
   const [noReg, setNoReg] = useState('')
   const [isLate, setIsLate] = useState(false)
@@ -118,6 +120,20 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   }, [token])
 
   useEffect(() => { loadMeeting() }, [loadMeeting])
+
+  // Splash minimum display timer — show splash for at least 2.5s
+  useEffect(() => {
+    const t = setTimeout(() => setSplashMinDone(true), 2500)
+    return () => clearTimeout(t)
+  }, [])
+
+  // Dismiss splash once both: min time elapsed AND data loaded
+  useEffect(() => {
+    if (splashMinDone && !loadingInit) {
+      const t = setTimeout(() => setShowSplash(false), 300)
+      return () => clearTimeout(t)
+    }
+  }, [splashMinDone, loadingInit])
 
   // Auto-focus input
   useEffect(() => {
@@ -279,12 +295,58 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   // Stable: only addRecentScan + incrementCount (both stable)
   }, [addRecentScan, incrementCount])
 
-  if (loadingInit) {
+  /* ── Splash Screen — premium branding intro ───────────────── */
+  if (showSplash || loadingInit) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-10 w-10 animate-spin text-white" />
-          <p className="text-white/80 text-sm font-medium">Memuat data event...</p>
+      <div
+        className="min-h-screen flex items-center justify-center relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #0c1a5e 0%, #1a3590 50%, #1e50c8 100%)' }}
+      >
+        {/* Dot pattern */}
+        <div className="absolute inset-0 opacity-20"
+          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+        {/* Glowing orbs */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full opacity-10 blur-3xl" style={{ background: 'radial-gradient(circle, #60a5fa, transparent)' }} />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full opacity-10 blur-3xl" style={{ background: 'radial-gradient(circle, #93c5fd, transparent)' }} />
+
+        <div className="relative z-10 text-center space-y-10 px-8 animate-in fade-in zoom-in-95 duration-700">
+          {/* Animated Logo */}
+          <div className="flex justify-center">
+            <div
+              className="w-28 h-28 rounded-[2.5rem] flex items-center justify-center shadow-2xl border-2 border-white/20 animate-bounce-gentle"
+              style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' }}
+            >
+              <ScanLine className="text-white" style={{ width: '3.5rem', height: '3.5rem' }} />
+            </div>
+          </div>
+
+          {/* Branding */}
+          <div className="space-y-3">
+            <h1 className="text-5xl font-black text-white tracking-tight">
+              PRESENSI<br />
+              <span className="text-blue-200">FILKOM</span>
+            </h1>
+            <div className="flex items-center justify-center gap-3">
+              <div className="h-px w-12 bg-white/20" />
+              <p className="text-blue-200/70 text-xs font-bold tracking-[0.3em] uppercase">Kuliah Umum & Chapel</p>
+              <div className="h-px w-12 bg-white/20" />
+            </div>
+            <p className="text-blue-300/50 text-xs tracking-[0.2em] uppercase font-medium">Universitas Klabat</p>
+          </div>
+
+          {/* Scanner badge */}
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-blue-100/80 text-sm font-medium">Scanner Mode</span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-300/60 animate-progress-loading origin-left rounded-full" />
+            </div>
+            <p className="text-blue-300/40 text-[10px] font-bold tracking-[0.25em] uppercase">Menyiapkan scanner...</p>
+          </div>
         </div>
       </div>
     )
