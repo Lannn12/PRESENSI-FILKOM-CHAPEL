@@ -361,9 +361,14 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   const isActive = meeting.status === 'AKTIF'
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex flex-col">
+    <div className="min-h-screen text-white flex flex-col relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0c1a5e 0%, #1a3590 50%, #1e50c8 100%)' }}>
+      {/* Decorative background — matches login & loading screens */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+      <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full opacity-15 blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle, #60a5fa, transparent)' }} />
+      <div className="absolute bottom-[-100px] left-[-100px] w-[400px] h-[400px] rounded-full opacity-10 blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle, #93c5fd, transparent)' }} />
+
       {/* Header */}
-      <div className="px-4 pt-6 pb-4 border-b border-white/10 backdrop-blur-xl bg-white/5">
+      <div className="relative z-10 px-4 pt-6 pb-4 border-b border-white/10 backdrop-blur-xl bg-white/5">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -404,7 +409,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-4 max-w-md mx-auto w-full space-y-4">
+      <div className="relative z-10 flex-1 px-4 py-4 max-w-md mx-auto w-full space-y-4">
         {/* Feedback Banner */}
         {feedback && (
           <div className={`flex items-center gap-3 rounded-2xl p-4 text-sm font-medium animate-in slide-in-from-top-2 shadow-xl backdrop-blur-xl border ${

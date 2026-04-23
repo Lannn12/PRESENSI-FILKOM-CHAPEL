@@ -79,9 +79,9 @@ export default function StudentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-white dark:from-[#0c1a5e] dark:via-[#1a3590] dark:to-[#1e50c8] flex flex-col">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b px-4 py-4">
+      <div className="bg-white/80 dark:bg-blue-950/60 backdrop-blur-xl border-b border-border dark:border-white/10 px-4 py-4">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-lg">
             <BookOpen className="h-5 w-5 text-white" />
