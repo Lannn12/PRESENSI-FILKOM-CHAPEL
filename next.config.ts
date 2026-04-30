@@ -5,9 +5,27 @@ const nextConfig: NextConfig = {
     return [
       {
         // Apply security headers to ALL routes
-        // NOTE: CSP is handled dynamically in middleware.ts with nonce generation
         source: "/(.*)",
         headers: [
+          // ── Content-Security-Policy ──────────────────────────────
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: blob:",
+              "media-src 'self' blob:",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+              "frame-src 'none'",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "upgrade-insecure-requests",
+            ].join("; "),
+          },
           // ── X-Frame-Options ──────────────────────────────────────
           {
             key: "X-Frame-Options",

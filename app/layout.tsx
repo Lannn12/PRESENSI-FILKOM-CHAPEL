@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   keywords: ["presensi", "filkom", "kuliah umum", "chapel", "universitas klabat"],
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
