@@ -48,16 +48,6 @@ const nextConfig: NextConfig = {
             key: "Cross-Origin-Opener-Policy",
             value: "same-origin",
           },
-          // ── Cross-Origin-Resource-Policy ─────────────────────────
-          {
-            key: "Cross-Origin-Resource-Policy",
-            value: "same-origin",
-          },
-          // ── Cross-Origin-Embedder-Policy ─────────────────────────
-          {
-            key: "Cross-Origin-Embedder-Policy",
-            value: "credentialless",
-          },
         ],
       },
     ];
