@@ -10,8 +10,16 @@ export async function GET(req: NextRequest) {
   const queryParam = req.nextUrl.searchParams.get('no_regis') || req.nextUrl.searchParams.get('query')
   if (!queryParam) return NextResponse.json({ error: 'Parameter query diperlukan.' }, { status: 400 })
 
+  // Input length validation
+  if (queryParam.length > 100) {
+    return NextResponse.json({ error: 'Query terlalu panjang.' }, { status: 400 })
+  }
+
   const supabase = await createServiceClient()
   const cleanQuery = queryParam.trim()
+
+  // Escape SQL ILIKE wildcards to prevent query manipulation
+  const escapedQuery = cleanQuery.replace(/[%_\\]/g, '\\$&')
 
   // First check if it matches an exact no_regis
   let { data: students } = await supabase
@@ -19,12 +27,12 @@ export async function GET(req: NextRequest) {
     .select('id, no_regis, first_name, last_name, major, gender')
     .eq('no_regis', cleanQuery.toUpperCase())
 
-  // If no exact match, search by ILIKE for names or no_regis
+  // If no exact match, search by ILIKE for names or no_regis (with escaped wildcards)
   if (!students || students.length === 0) {
     const { data: searchResults } = await supabase
       .from('students')
       .select('id, no_regis, first_name, last_name, major, gender')
-      .or(`no_regis.ilike.%${cleanQuery}%,first_name.ilike.%${cleanQuery}%,last_name.ilike.%${cleanQuery}%`)
+      .or(`no_regis.ilike.%${escapedQuery}%,first_name.ilike.%${escapedQuery}%,last_name.ilike.%${escapedQuery}%`)
       .limit(10)
     
     if (searchResults) students = searchResults

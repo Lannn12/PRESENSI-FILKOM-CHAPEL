@@ -1,7 +1,91 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async headers() {
+    return [
+      {
+        // Apply security headers to ALL routes
+        source: "/(.*)",
+        headers: [
+          // ── Content-Security-Policy ──────────────────────────────
+          // Strict CSP: only allow resources from own domain + Supabase + Google Fonts
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: blob:",
+              "media-src 'self' blob:",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+              "frame-src 'none'",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "upgrade-insecure-requests",
+            ].join("; "),
+          },
+          // ── X-Frame-Options ──────────────────────────────────────
+          // Prevent clickjacking by denying all iframe embedding
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          // ── X-Content-Type-Options ───────────────────────────────
+          // Prevent MIME type sniffing
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          // ── Referrer-Policy ──────────────────────────────────────
+          // Only send origin on cross-origin, full URL on same-origin
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          // ── Permissions-Policy ───────────────────────────────────
+          // Disable unused browser APIs, allow camera for QR scanner
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), microphone=(), geolocation=(), interest-cohort=()",
+          },
+          // ── Strict-Transport-Security ────────────────────────────
+          // Enforce HTTPS with 2-year max-age, include subdomains, allow preload
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          // ── X-DNS-Prefetch-Control ───────────────────────────────
+          {
+            key: "X-DNS-Prefetch-Control",
+            value: "on",
+          },
+          // ── X-Permitted-Cross-Domain-Policies ────────────────────
+          {
+            key: "X-Permitted-Cross-Domain-Policies",
+            value: "none",
+          },
+          // ── Cross-Origin-Opener-Policy ───────────────────────────
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
+          },
+          // ── Cross-Origin-Resource-Policy ─────────────────────────
+          {
+            key: "Cross-Origin-Resource-Policy",
+            value: "same-origin",
+          },
+          // ── Cross-Origin-Embedder-Policy ─────────────────────────
+          {
+            key: "Cross-Origin-Embedder-Policy",
+            value: "credentialless",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

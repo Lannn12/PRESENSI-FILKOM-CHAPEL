@@ -22,6 +22,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Token dan no_regis wajib diisi.' }, { status: 400 })
     }
 
+    // Input length validation — prevent oversized payloads
+    if (typeof token !== 'string' || token.length > 100) {
+      return NextResponse.json({ error: 'Token tidak valid.' }, { status: 400 })
+    }
+    if (typeof no_regis !== 'string' || no_regis.length > 30) {
+      return NextResponse.json({ error: 'Nomor registrasi tidak valid.' }, { status: 400 })
+    }
+    if (pin !== undefined && (typeof pin !== 'string' || pin.length > 6)) {
+      return NextResponse.json({ error: 'PIN tidak valid.' }, { status: 400 })
+    }
+
     const supabase = getServiceSupabase()
 
     // Validate token & get meeting
@@ -161,6 +172,7 @@ export async function GET(req: NextRequest) {
 
   const token = req.nextUrl.searchParams.get('token')
   if (!token) return NextResponse.json({ error: 'Token required.' }, { status: 400 })
+  if (token.length > 100) return NextResponse.json({ error: 'Token tidak valid.' }, { status: 400 })
 
   // Validate env vars — common cause of 404 on Vercel
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -179,34 +191,13 @@ export async function GET(req: NextRequest) {
     .single()
 
   if (meetErr || !meeting) {
-    // Diagnostic: check how many meetings exist and their tokens
-    const { count: totalMeetings } = await supabase
-      .from('meetings')
-      .select('*', { count: 'exact', head: true })
-    
-    const { data: allTokens } = await supabase
-      .from('meetings')
-      .select('scanner_token, nama_event, status')
-      .limit(5)
-
+    // Server-side logging only — never expose diagnostics to client
     console.error('[API /api/scan GET] Meeting lookup failed:', {
-      token,
-      totalMeetings,
-      existingTokens: allTokens?.map(t => ({ token: t.scanner_token?.substring(0, 8) + '...', event: t.nama_event, status: t.status })),
       errorCode: meetErr?.code,
       errorMessage: meetErr?.message,
     })
     return NextResponse.json(
-      { 
-        error: 'Token scanner tidak valid atau event tidak ditemukan.',
-        debug: {
-          code: meetErr?.code ?? 'no_error_code',
-          message: meetErr?.message ?? 'no_error_message',
-          total_meetings_in_db: totalMeetings ?? 0,
-          existing_events: allTokens?.map(t => ({ name: t.nama_event, status: t.status, token_prefix: t.scanner_token?.substring(0, 12) })) ?? [],
-          token_received: token ?? 'empty',
-        }
-      },
+      { error: 'Token scanner tidak valid atau event tidak ditemukan.' },
       { status: 404 }
     )
   }
