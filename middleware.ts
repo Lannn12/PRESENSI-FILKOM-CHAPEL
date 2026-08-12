@@ -1,4 +1,3 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
@@ -23,28 +22,37 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 }
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const supabaseResponse = NextResponse.next({ request })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+  // Lightweight, non-blocking session check for middleware:
+  // Avoid invoking network calls here (e.g. `supabase.auth.getUser()`),
+  // which can cause middleware invocation timeouts on Vercel.
+  // Instead, only check for presence of likely Supabase auth cookies.
+  const projectRef = (() => {
+    try {
+      return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split('.')[0]
+    } catch {
+      return ''
     }
-  )
+  })()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const possibleCookieNames = [
+    `sb-${projectRef}-auth-token`,
+    'sb-access-token',
+    'sb-refresh-token',
+    'supabase-auth-token',
+    'supabase-session',
+  ]
+
+  let hasSession = false
+  for (const name of possibleCookieNames) {
+    if (request.cookies.get(name)) {
+      hasSession = true
+      break
+    }
+  }
+
+  const user = hasSession ? {} : null
 
   const { pathname } = request.nextUrl
 
