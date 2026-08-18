@@ -24,14 +24,14 @@ export async function GET(req: NextRequest) {
   // First check if it matches an exact no_regis
   let { data: students } = await supabase
     .from('students')
-    .select('id, no_regis, first_name, last_name, major, gender')
+    .select('id, no_regis, first_name, last_name, major, gender, status')
     .eq('no_regis', cleanQuery.toUpperCase())
 
   // If no exact match, search by ILIKE for names or no_regis (with escaped wildcards)
   if (!students || students.length === 0) {
     const { data: searchResults } = await supabase
       .from('students')
-      .select('id, no_regis, first_name, last_name, major, gender')
+      .select('id, no_regis, first_name, last_name, major, gender, status')
       .or(`no_regis.ilike.%${escapedQuery}%,first_name.ilike.%${escapedQuery}%,last_name.ilike.%${escapedQuery}%`)
       .limit(10)
     
@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
       last_name: student.last_name,
       major: student.major,
       gender: student.gender,
+      status: student.status,
     },
     stats: { total: closed.length, hadir, late, tidak_hadir },
     attendances: closed,

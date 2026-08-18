@@ -27,6 +27,7 @@ interface StudentInfo {
   last_name: string
   major: string
   gender: string
+  status?: string
 }
 interface Stats {
   total: number
@@ -153,6 +154,9 @@ export default function StudentPage() {
                     <div className="flex-1">
                       <p className="font-bold text-sm text-foreground">
                         {cand.last_name}, {cand.first_name}
+                        {cand.status === 'MAGANG' && (
+                          <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded border bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400 text-[9px] font-bold uppercase tracking-wider">Magang</span>
+                        )}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {cand.no_regis} &middot; {cand.major}
@@ -175,9 +179,14 @@ export default function StudentPage() {
                     <User className="h-7 w-7 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-lg text-gradient-primary">
-                      {result.student.last_name}, {result.student.first_name}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-lg text-gradient-primary">
+                        {result.student.last_name}, {result.student.first_name}
+                      </p>
+                      {result.student.status === 'MAGANG' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400 text-[10px] font-bold uppercase tracking-wider shadow-sm">🏢 Magang</span>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {result.student.no_regis} &middot; {result.student.major}
                     </p>

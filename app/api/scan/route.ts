@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     // Find student — ensure no_regis is uppercased to match stored data
     const { data: student, error: studErr } = await supabase
       .from('students')
-      .select('id, first_name, last_name, no_regis, major')
+      .select('id, first_name, last_name, no_regis, major, status')
       .eq('no_regis', no_regis.trim().toUpperCase())
       .single()
 

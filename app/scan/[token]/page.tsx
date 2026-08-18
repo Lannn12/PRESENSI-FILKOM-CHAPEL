@@ -14,6 +14,7 @@ interface RecentScan {
   status: 'HADIR' | 'LATE'
   waktu_scan: string
   student: { no_regis: string; first_name: string; last_name: string } | null
+  student_status: string | null
   section_title: string | null
   seat_label: string | null
 }
@@ -266,7 +267,8 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       if (data.success) {
         const seatInfo = data.seat_label ? ` · 🪑${data.seat_label}` : ''
         const sectionLabel = data.section_title ? ` · 📍${data.section_title}${seatInfo}` : ''
-        setFeedback({ type: 'success', message: `${data.message as string}${sectionLabel}` })
+        const magangLabel = (data.student as Record<string, unknown>)?.status === 'MAGANG' ? ' · 🏢 MAGANG' : ''
+        setFeedback({ type: 'success', message: `${data.message as string}${sectionLabel}${magangLabel}` })
         addRecentScan({
           id: Date.now().toString(),
           status: data.status as 'HADIR' | 'LATE',
@@ -276,6 +278,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
             first_name: (data.student as { first_name: string }).first_name,
             last_name: (data.student as { last_name: string }).last_name,
           } : null,
+          student_status: (data.student as Record<string, unknown>)?.status as string ?? null,
           section_title: (data.section_title as string) ?? null,
           seat_label: (data.seat_label as string) ?? null,
         })
@@ -283,7 +286,8 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       } else if (data.warning) {
         const seatInfo = data.seat_label ? ` · 🪑${data.seat_label}` : ''
         const sectionLabel = data.section_title ? ` · 📍${data.section_title}${seatInfo}` : ''
-        setFeedback({ type: 'warning', message: `${data.message as string}${sectionLabel}` })
+        const magangLabel = (data.student as Record<string, unknown>)?.status === 'MAGANG' ? ' · 🏢 MAGANG' : ''
+        setFeedback({ type: 'warning', message: `${data.message as string}${sectionLabel}${magangLabel}` })
       } else {
         setFeedback({ type: 'error', message: (data.error as string) ?? 'Terjadi kesalahan.' })
       }
@@ -616,7 +620,12 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
               <div className="flex-1 min-w-0">
                 {scan.student ? (
                   <>
-                    <p className="text-sm font-medium truncate">{scan.student.last_name}, {scan.student.first_name}</p>
+                    <p className="text-sm font-medium truncate">
+                      {scan.student.last_name}, {scan.student.first_name}
+                      {scan.student_status === 'MAGANG' && (
+                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-300 text-[10px] font-bold uppercase tracking-wider">🏢 Magang</span>
+                      )}
+                    </p>
                     <p className="text-xs text-white/50 mt-0.5">
                       {scan.student.no_regis}
                       {(scan.section_title || scan.seat_label) && (

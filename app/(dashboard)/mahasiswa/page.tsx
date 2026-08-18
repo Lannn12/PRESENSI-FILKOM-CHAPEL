@@ -13,10 +13,11 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Upload, Plus, Trash2, Loader2, Users, Search, ChevronLeft, ChevronRight, Link, Copy } from 'lucide-react'
+import { Upload, Plus, Trash2, Loader2, Users, Search, ChevronLeft, ChevronRight, Link, Copy, Briefcase } from 'lucide-react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
-import type { Student, AbsenterGroup, Semester } from '@/lib/types'
+import type { Student, AbsenterGroup, Semester, StudentStatus } from '@/lib/types'
+import { STUDENT_STATUS_LABELS, STUDENT_STATUS_COLORS } from '@/lib/types'
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100, 500, 1000]
 
@@ -66,10 +67,14 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
   const [pageSize, setPageSize] = useState(50)
   const [searchQ, setSearchQ] = useState('')
   const [debouncedQ, setDebouncedQ] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'ALL' | StudentStatus>('ALL')
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [editStudent, setEditStudent] = useState<Student | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [togglingStatus, setTogglingStatus] = useState<string | null>(null)
+  const [showDeleteAll, setShowDeleteAll] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
 
   // Debounce search
   useEffect(() => {
@@ -83,13 +88,29 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
     if (debouncedQ) {
       query = query.or(`no_regis.ilike.%${debouncedQ}%,first_name.ilike.%${debouncedQ}%,last_name.ilike.%${debouncedQ}%`)
     }
+    if (statusFilter !== 'ALL') {
+      query = query.eq('status', statusFilter)
+    }
     const { data, count } = await query.order('last_name').range(page * pageSize, (page + 1) * pageSize - 1)
     setStudents(data ?? [])
     setTotalCount(count ?? 0)
     setLoading(false)
-  }, [supabase, debouncedQ, page, pageSize])
+  }, [supabase, debouncedQ, page, pageSize, statusFilter])
 
   useEffect(() => { fetchStudents() }, [fetchStudents])
+
+  async function handleToggleStatus(student: Student) {
+    const newStatus: StudentStatus = student.status === 'MAGANG' ? 'AKTIF' : 'MAGANG'
+    setTogglingStatus(student.id)
+    const { error } = await supabase.from('students').update({ status: newStatus }).eq('id', student.id)
+    if (error) {
+      toast.error('Gagal ubah status: ' + error.message)
+    } else {
+      toast.success(`${student.last_name}, ${student.first_name} → ${STUDENT_STATUS_LABELS[newStatus]}`)
+      fetchStudents()
+    }
+    setTogglingStatus(null)
+  }
 
   // CSV/Excel import
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -191,6 +212,17 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
     fetchStudents()
   }
 
+  async function handleDeleteAll() {
+    setDeletingAll(true)
+    // Delete all students by passing a condition that matches everything (id is not null)
+    const { error } = await supabase.from('students').delete().not('id', 'is', null)
+    if (error) { toast.error('Gagal hapus semua: ' + error.message) }
+    else { toast.success('Semua data mahasiswa berhasil dihapus') }
+    setDeletingAll(false)
+    setShowDeleteAll(false)
+    fetchStudents()
+  }
+
   const totalPages = Math.ceil(totalCount / pageSize)
 
   return (
@@ -201,10 +233,16 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
           <CardDescription>{totalCount} mahasiswa terdaftar</CardDescription>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
-            Import CSV/Excel
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
+              Import CSV/Excel
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => setShowDeleteAll(true)} disabled={totalCount === 0}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              Hapus Semua
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">Kolom: <code className="bg-muted px-1 rounded">noreg; name; major; gender</code> — name: <code className="bg-muted px-1 rounded">LastName, FirstName</code></p>
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileUpload} />
         </div>
@@ -215,6 +253,16 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input className="pl-8" placeholder="Cari no. reg / nama..." value={searchQ} onChange={(e) => setSearchQ(e.target.value)} />
           </div>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as 'ALL' | StudentStatus); setPage(0) }}>
+            <SelectTrigger className="w-32 shrink-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Semua Status</SelectItem>
+              <SelectItem value="AKTIF">✅ Aktif</SelectItem>
+              <SelectItem value="MAGANG">🏢 Magang</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(0) }}>
             <SelectTrigger className="w-28 shrink-0">
               <SelectValue />
@@ -234,22 +282,39 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
                 <TableHead>Nama</TableHead>
                 <TableHead>Prodi</TableHead>
                 <TableHead>Gender</TableHead>
-                <TableHead className="w-24" />
+                <TableHead>Status</TableHead>
+                <TableHead className="w-28" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
               ) : students.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Tidak ada data</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Tidak ada data</TableCell></TableRow>
               ) : students.map((s) => (
-                <TableRow key={s.id}>
+                <TableRow key={s.id} className={s.status === 'MAGANG' ? 'bg-orange-50/50 dark:bg-orange-950/10' : ''}>
                   <TableCell className="text-sm font-mono">{s.no_regis}</TableCell>
                   <TableCell className="text-sm">{s.last_name}, {s.first_name}</TableCell>
                   <TableCell className="text-sm">{s.major}</TableCell>
                   <TableCell>
                     <Badge variant={s.gender === 'MALE' ? 'default' : 'secondary'} className="text-xs">
                       {s.gender === 'MALE' ? '♂ L' : '♀ P'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={`text-xs cursor-pointer border transition-all hover:scale-105 ${STUDENT_STATUS_COLORS[s.status ?? 'AKTIF']}`}
+                      onClick={() => handleToggleStatus(s)}
+                      title={`Klik untuk ubah ke ${s.status === 'MAGANG' ? 'Aktif' : 'Magang'}`}
+                    >
+                      {togglingStatus === s.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <>
+                          {s.status === 'MAGANG' && <Briefcase className="h-3 w-3 mr-1" />}
+                          {STUDENT_STATUS_LABELS[s.status ?? 'AKTIF']}
+                        </>
+                      )}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -294,6 +359,28 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>Batal</Button>
             <Button variant="destructive" onClick={handleDelete}>Hapus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete All Confirmation */}
+      <Dialog open={showDeleteAll} onOpenChange={setShowDeleteAll}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Hapus Semua Data Mahasiswa?</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-red-600 font-medium">PERINGATAN KERAS!</p>
+            <p className="text-sm text-muted-foreground">
+              Anda akan menghapus <strong>{totalCount}</strong> mahasiswa. 
+              Semua data presensi, absenter group, dan penetapan tempat duduk terkait akan ikut terhapus secara permanen.
+            </p>
+            <p className="text-sm text-muted-foreground">Tindakan ini tidak dapat dibatalkan.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteAll(false)} disabled={deletingAll}>Batal</Button>
+            <Button variant="destructive" onClick={handleDeleteAll} disabled={deletingAll}>
+              {deletingAll ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Ya, Hapus Semua
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

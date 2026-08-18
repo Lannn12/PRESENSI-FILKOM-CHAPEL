@@ -30,6 +30,7 @@ create table public.students (
   last_name varchar not null,
   major varchar not null,
   gender varchar not null check (gender in ('MALE', 'FEMALE')),
+  status varchar not null default 'AKTIF' check (status in ('AKTIF', 'MAGANG')),
   created_at timestamptz not null default now()
 );
 
