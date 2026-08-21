@@ -11,14 +11,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Loader2, Download, Filter, FileSpreadsheet, FileText, FileDown, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
-import type { Semester, Meeting, AttendanceStatus, EventType } from '@/lib/types'
-import { EVENT_TYPE_LABELS, STATUS_LABELS } from '@/lib/types'
+import type { Semester, Meeting, AttendanceStatus, EventType, StudentStatus } from '@/lib/types'
+import { EVENT_TYPE_LABELS, STATUS_LABELS, STUDENT_STATUS_LABELS } from '@/lib/types'
 
 interface PivotRow {
   student_id: string
   no_regis: string
   nama: string
   major: string
+  student_status: StudentStatus
   [meetingId: string]: string
 }
 
@@ -66,7 +67,7 @@ export default function RekapPage() {
     if (!filteredMeetings.length) { setPivotRows([]); setLoading(false); return }
 
     const meetingIds = filteredMeetings.map((m: { id: string }) => m.id)
-    const { data: studs } = await supabase.from('students').select('id, no_regis, first_name, last_name, major').order('last_name')
+    const { data: studs } = await supabase.from('students').select('id, no_regis, first_name, last_name, major, status').order('last_name')
     const { data: atts } = await supabase.from('attendances').select('student_id, meeting_id, status').in('meeting_id', meetingIds)
 
     // Build lookup map
@@ -75,12 +76,13 @@ export default function RekapPage() {
       attMap.set(`${a.student_id}__${a.meeting_id}`, a.status as AttendanceStatus)
     }
 
-    const rows: PivotRow[] = (studs ?? []).map((s: { id: string; no_regis: string; first_name: string; last_name: string; major: string }) => {
+    const rows: PivotRow[] = (studs ?? []).map((s: { id: string; no_regis: string; first_name: string; last_name: string; major: string; status: StudentStatus }) => {
       const row: PivotRow = {
         student_id: s.id,
         no_regis: s.no_regis,
         nama: `${s.last_name}, ${s.first_name}`,
         major: s.major,
+        student_status: s.status,
       }
       for (const m of filteredMeetings) {
         row[m.id] = attMap.get(`${s.id}__${m.id}`) ?? '—'
@@ -150,11 +152,12 @@ export default function RekapPage() {
 
   // Export helpers
   function getExportData() {
-    const headers = ['No. Reg', 'Nama', 'Prodi', ...meetings.map((m: Meeting) => `${m.nama_event} (${m.tanggal})`)]
+    const headers = ['No. Reg', 'Nama', 'Prodi', 'Status', ...meetings.map((m: Meeting) => `${m.nama_event} (${m.tanggal})`)]
     const rows = displayRows.map((r: PivotRow) => [
       r.no_regis,
       r.nama,
       r.major,
+      STUDENT_STATUS_LABELS[r.student_status] ?? r.student_status,
       ...meetings.map((m: Meeting) => {
         const val = r[m.id]
         return val === 'HADIR' ? 'H' : val === 'LATE' ? 'L' : val === 'TIDAK_HADIR' ? 'X' : ''
@@ -174,7 +177,7 @@ export default function RekapPage() {
 
       if (format === 'xlsx' || format === 'csv') {
         const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
-        ws['!cols'] = [{ wch: 14 }, { wch: 28 }, { wch: 20 }, ...meetings.map(() => ({ wch: 14 }))]
+        ws['!cols'] = [{ wch: 14 }, { wch: 28 }, { wch: 20 }, { wch: 12 }, ...meetings.map(() => ({ wch: 14 }))]
         const wb = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi')
         XLSX.writeFile(wb, getFileName(format), { bookType: format })
@@ -194,7 +197,7 @@ export default function RekapPage() {
           styles: { fontSize: 6, cellPadding: 1.5 },
           headStyles: { fillColor: [59, 130, 246], fontSize: 6 },
           alternateRowStyles: { fillColor: [245, 247, 250] },
-          columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 25 } },
+          columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 25 }, 3: { cellWidth: 18 } },
         })
         doc.save(getFileName('pdf'))
         toast.success('File PDF berhasil diexport!')
@@ -293,6 +296,7 @@ export default function RekapPage() {
                     <th className="sticky left-0 bg-muted/50 px-3 py-2 text-left font-medium text-xs w-28">No. Reg</th>
                     <th className="sticky left-28 bg-muted/50 px-3 py-2 text-left font-medium text-xs min-w-44">Nama</th>
                     <th className="px-3 py-2 text-left font-medium text-xs min-w-32">Prodi</th>
+                    <th className="px-3 py-2 text-center font-medium text-xs min-w-20">Status</th>
                     {meetings.map((m: Meeting) => (
                       <th key={m.id} className="px-2 py-2 text-center font-medium text-xs min-w-24">
                         <div className="truncate max-w-24" title={m.nama_event}>{m.nama_event}</div>
@@ -308,6 +312,11 @@ export default function RekapPage() {
                       <td className="sticky left-0 bg-white px-3 py-2 text-xs font-mono">{row.no_regis}</td>
                       <td className="sticky left-28 bg-white px-3 py-2 text-xs">{row.nama}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground">{row.major}</td>
+                      <td className="px-3 py-2 text-center">
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0.5 ${row.student_status === 'MAGANG' ? 'bg-orange-100 text-orange-800 border-orange-500/30' : 'bg-green-100 text-green-800 border-green-500/30'}`}>
+                          {row.student_status === 'MAGANG' ? '🏢 Magang' : 'Aktif'}
+                        </Badge>
+                      </td>
                       {meetings.map((m: Meeting) => {
                         const val = row[m.id] as string
                         const status = val as AttendanceStatus
