@@ -103,7 +103,7 @@ export default function StudentPage() {
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Masukkan No. Registrasi atau Nama..."
+                  placeholder="Masukkan No. Registrasi..."
                   className="text-base h-12 pl-11 rounded-xl border-border/50 focus:border-primary/50 focus:ring-primary/20"
                   autoCapitalize="off"
                   autoCorrect="off"

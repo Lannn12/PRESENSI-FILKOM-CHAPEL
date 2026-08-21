@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const { data: searchResults } = await supabase
       .from('students')
       .select('id, no_regis, first_name, last_name, major, gender, status')
-      .or(`no_regis.ilike.%${escapedQuery}%,first_name.ilike.%${escapedQuery}%,last_name.ilike.%${escapedQuery}%`)
+      .ilike('no_regis', `%${escapedQuery}%`)
       .limit(10)
     
     if (searchResults) students = searchResults
