@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import type { Student, Attendance, Meeting } from '@/lib/types'
 import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types'
+import { formatStudentName } from '@/lib/utils'
 
 export default function StudentProfilePage() {
   const { no_regis } = useParams()
@@ -54,7 +55,7 @@ export default function StudentProfilePage() {
           <CardContent className="space-y-2">
             <div>
               <p className="text-sm text-muted-foreground uppercase font-semibold">Nama Lengkap</p>
-              <p className="text-xl font-bold">{student.first_name} {student.last_name}</p>
+              <p className="text-xl font-bold">{formatStudentName(student.first_name, student.last_name)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground uppercase font-semibold">No. Registrasi</p>

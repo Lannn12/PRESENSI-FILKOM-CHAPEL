@@ -18,6 +18,7 @@ import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import type { Student, AbsenterGroup, Semester, StudentStatus } from '@/lib/types'
 import { STUDENT_STATUS_LABELS, STUDENT_STATUS_COLORS } from '@/lib/types'
+import { formatStudentNameForSearch } from '@/lib/utils'
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100, 500, 1000]
 
@@ -475,7 +476,7 @@ function AbsenterTab({ activeSemester }: { activeSemester: Semester | null }) {
   }
 
   const filteredAllStudents = allStudents.filter((s) =>
-    !memberSearch || `${s.last_name} ${s.first_name} ${s.no_regis}`.toLowerCase().includes(memberSearch.toLowerCase())
+    !memberSearch || `${formatStudentNameForSearch(s.first_name, s.last_name)} ${s.no_regis}`.toLowerCase().includes(memberSearch.toLowerCase())
   )
 
   if (!activeSemester) {

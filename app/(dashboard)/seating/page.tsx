@@ -15,6 +15,7 @@ import { Plus, Trash2, Loader2, Users, ArrowUp, ArrowDown, Shuffle, FileSpreadsh
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import { getSeatLabel } from '@/lib/seat-utils'
+import { formatStudentNameForSearch } from '@/lib/utils'
 import type { Section, Student, Semester } from '@/lib/types'
 
 interface AssignedStudent {
@@ -269,7 +270,7 @@ export default function SeatingPage() {
     }
   }
 
-  const filteredStudents = allStudents.filter(s => !assignSearch || `${s.last_name} ${s.first_name} ${s.no_regis}`.toLowerCase().includes(assignSearch.toLowerCase()))
+  const filteredStudents = allStudents.filter(s => !assignSearch || `${formatStudentNameForSearch(s.first_name, s.last_name)} ${s.no_regis}`.toLowerCase().includes(assignSearch.toLowerCase()))
   if (!activeSemester) return <div className="p-8 text-center text-muted-foreground">Tidak ada semester aktif.</div>
 
   const maleSections = sections.filter(s => s.gender === 'MALE')

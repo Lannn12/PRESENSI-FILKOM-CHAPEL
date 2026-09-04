@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { Loader2, Download, Filter, FileSpreadsheet, FileText, FileDown, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
@@ -37,10 +39,12 @@ export default function RekapPage() {
   const [loading, setLoading] = useState(true)
 
   const [filterType, setFilterType] = useState<'ALL' | EventType>('ALL')
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'AKTIF' | 'DITUTUP' | 'ARCHIVED'>('ALL')
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'AKTIF' | 'DITUTUP' | 'ARCHIVED' | 'SEMUA'>('ALL')
   const [filterSearch, setFilterSearch] = useState('')
+  const [showAllStudents, setShowAllStudents] = useState(false) // Toggle untuk tampilkan semua mahasiswa
   const [exporting, setExporting] = useState(false)
   const [savingCell, setSavingCell] = useState<string | null>(null) // "studentId__meetingId"
+  const [debugInfo, setDebugInfo] = useState<{ totalMeetings: number; filteredMeetings: number } | null>(null)
 
   useEffect(() => {
     supabase.from('semesters').select('*').eq('is_active', true).single()
@@ -51,10 +55,18 @@ export default function RekapPage() {
     if (!activeSemester) return
     setLoading(true)
 
+    // First, get total meetings count for debug
+    const { count: totalMeetingsCount } = await supabase
+      .from('meetings')
+      .select('*', { count: 'exact', head: true })
+      .eq('semester_id', activeSemester.id)
+
     let mQuery = supabase.from('meetings').select('*').eq('semester_id', activeSemester.id).order('tanggal')
     
     if (filterStatus === 'ALL') {
       mQuery = mQuery.in('status', ['AKTIF', 'DITUTUP'])
+    } else if (filterStatus === 'SEMUA') {
+      // No status filter - show all meetings including DRAFT
     } else {
       mQuery = mQuery.eq('status', filterStatus)
     }
@@ -64,11 +76,29 @@ export default function RekapPage() {
     const filteredMeetings = mData ?? []
     setMeetings(filteredMeetings)
 
+    // Set debug info
+    setDebugInfo({
+      totalMeetings: totalMeetingsCount ?? 0,
+      filteredMeetings: filteredMeetings.length,
+    })
+
+    // Show warning if some meetings are filtered out
+    if (totalMeetingsCount && totalMeetingsCount > filteredMeetings.length) {
+      const hiddenCount = totalMeetingsCount - filteredMeetings.length
+      toast.info(`⚠️ ${hiddenCount} event tidak ditampilkan karena filter status. Ubah filter untuk melihat semua event.`, {
+        duration: 5000,
+      })
+    }
+
     if (!filteredMeetings.length) { setPivotRows([]); setLoading(false); return }
 
     const meetingIds = filteredMeetings.map((m: { id: string }) => m.id)
-    const { data: studs } = await supabase.from('students').select('id, no_regis, first_name, last_name, major, status').order('last_name')
-    const { data: atts } = await supabase.from('attendances').select('student_id, meeting_id, status').in('meeting_id', meetingIds)
+    
+    // Ambil attendance data
+    const { data: atts } = await supabase
+      .from('attendances')
+      .select('student_id, meeting_id, status')
+      .in('meeting_id', meetingIds)
 
     // Build lookup map
     const attMap = new Map<string, AttendanceStatus>()
@@ -76,7 +106,36 @@ export default function RekapPage() {
       attMap.set(`${a.student_id}__${a.meeting_id}`, a.status as AttendanceStatus)
     }
 
-    const rows: PivotRow[] = (studs ?? []).map((s: { id: string; no_regis: string; first_name: string; last_name: string; major: string; status: StudentStatus }) => {
+    let studs: any[] = []
+
+    if (showAllStudents) {
+      // MODE: SEMUA MAHASISWA (termasuk yang tidak pernah hadir)
+      const { data: allStudents } = await supabase
+        .from('students')
+        .select('id, no_regis, first_name, last_name, major, status')
+        .order('last_name')
+      
+      studs = allStudents ?? []
+    } else {
+      // MODE: HANYA MAHASISWA YANG ADA ATTENDANCE (default)
+      const uniqueStudentIds = [...new Set((atts ?? []).map((a: { student_id: string }) => a.student_id))]
+      
+      if (uniqueStudentIds.length === 0) {
+        setPivotRows([])
+        setLoading(false)
+        return
+      }
+
+      const { data: attendedStudents } = await supabase
+        .from('students')
+        .select('id, no_regis, first_name, last_name, major, status')
+        .in('id', uniqueStudentIds)
+        .order('last_name')
+      
+      studs = attendedStudents ?? []
+    }
+
+    const rows: PivotRow[] = studs.map((s: { id: string; no_regis: string; first_name: string; last_name: string; major: string; status: StudentStatus }) => {
       const row: PivotRow = {
         student_id: s.id,
         no_regis: s.no_regis,
@@ -91,7 +150,7 @@ export default function RekapPage() {
     })
     setPivotRows(rows)
     setLoading(false)
-  }, [supabase, activeSemester, filterType, filterStatus])
+  }, [supabase, activeSemester, filterType, filterStatus, showAllStudents])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -223,6 +282,11 @@ export default function RekapPage() {
         <div>
           <h1 className="text-2xl font-bold">Rekap & Export</h1>
           <p className="text-sm text-muted-foreground">Rekap presensi semua mahasiswa per event</p>
+          {debugInfo && debugInfo.totalMeetings > debugInfo.filteredMeetings && (
+            <p className="text-xs text-orange-600 font-medium mt-1">
+              ⚠️ Menampilkan {debugInfo.filteredMeetings} dari {debugInfo.totalMeetings} event. Beberapa event tersembunyi karena filter status.
+            </p>
+          )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -269,17 +333,36 @@ export default function RekapPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Semua Status</SelectItem>
+            <SelectItem value="ALL">Aktif & Ditutup</SelectItem>
             <SelectItem value="AKTIF">Aktif</SelectItem>
             <SelectItem value="DITUTUP">Ditutup</SelectItem>
             <SelectItem value="ARCHIVED">Arsip</SelectItem>
+            <SelectItem value="SEMUA">🔍 Semua (termasuk Draft)</SelectItem>
           </SelectContent>
         </Select>
+        
+        {/* Toggle: Tampilkan Semua Mahasiswa */}
+        <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-background">
+          <Switch 
+            id="show-all-students" 
+            checked={showAllStudents} 
+            onCheckedChange={setShowAllStudents}
+          />
+          <Label htmlFor="show-all-students" className="text-sm cursor-pointer whitespace-nowrap">
+            Tampilkan semua mahasiswa
+          </Label>
+        </div>
       </div>
 
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">{displayRows.length} mahasiswa — {meetings.length} event</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {showAllStudents 
+              ? 'Menampilkan semua mahasiswa (termasuk yang tidak pernah hadir)'
+              : 'Hanya menampilkan mahasiswa yang memiliki data kehadiran di event yang dipilih'
+            }
+          </p>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -287,6 +370,11 @@ export default function RekapPage() {
           ) : meetings.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground text-sm">
               Belum ada event yang aktif atau ditutup{filterType !== 'ALL' ? ` untuk tipe "${EVENT_TYPE_LABELS[filterType]}"` : ''}
+            </div>
+          ) : displayRows.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground text-sm">
+              <p className="font-medium">Tidak ada data kehadiran untuk ditampilkan.</p>
+              <p className="text-xs mt-2">Mahasiswa akan muncul di rekap setelah melakukan scan di salah satu event yang dipilih.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
