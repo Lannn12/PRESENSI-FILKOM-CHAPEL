@@ -272,11 +272,12 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
             </Badge>
             {isClosed && (
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline" disabled={exporting || attendances.length === 0}>
-                    {exporting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
-                    Export
-                  </Button>
+                <DropdownMenuTrigger
+                  disabled={exporting || attendances.length === 0}
+                  className="inline-flex h-7 items-center justify-center gap-1 rounded-md border border-border bg-background px-2.5 text-[0.8rem] font-medium shadow-xs hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                  Export
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => handleExport('xlsx')}>
