@@ -19,6 +19,7 @@ import { STATUS_COLORS, STATUS_LABELS } from '@/lib/types'
 import type { Meeting, AttendanceStatus } from '@/lib/types'
 import * as XLSX from 'xlsx'
 import React from 'react'
+import { useRouter } from 'next/navigation'
 
 interface AttendanceRow {
   id: string
@@ -66,6 +67,7 @@ function toExportRows(rows: AttendanceRow[]) {
 export default function PresensMonitorPage({ params }: { params: Promise<{ meetingId: string }> }) {
   const { meetingId } = React.use(params)
   const supabase = createClient()
+  const router = useRouter()
 
   const [meeting, setMeeting] = useState<Meeting | null>(null)
   const [attendances, setAttendances] = useState<AttendanceRow[]>([])
@@ -140,7 +142,13 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
     if (!res.ok) {
       toast.error(data.error ?? 'Gagal menutup event.')
     } else {
-      toast.success(`Event ditutup. ${data.absent_inserted} mahasiswa dicatat TIDAK_HADIR.`)
+      toast.success(`Event ditutup. ${data.absent_inserted} mahasiswa dicatat TIDAK_HADIR.`, {
+        action: {
+          label: 'Lihat Rekap',
+          onClick: () => router.push('/rekap'),
+        },
+        duration: 8000,
+      })
       setMeeting(prev => prev ? { ...prev, status: 'DITUTUP' } : prev)
       setListFilter('ALL')
       await fetchAttendances(true)

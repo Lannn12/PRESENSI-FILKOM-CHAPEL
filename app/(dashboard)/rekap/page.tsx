@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,10 +25,77 @@ interface PivotRow {
   [meetingId: string]: string
 }
 
+interface AttendanceLite {
+  student_id: string
+  meeting_id: string
+  status: AttendanceStatus
+}
+
 const STATUS_BG: Record<AttendanceStatus, string> = {
   HADIR: 'bg-green-100 text-green-800',
   LATE: 'bg-yellow-100 text-yellow-800',
   TIDAK_HADIR: 'bg-red-100 text-red-800',
+}
+
+const PAGE_SIZE = 1000
+const ID_CHUNK = 150
+
+async function fetchAllAttendances(
+  supabase: ReturnType<typeof createClient>,
+  meetingIds: string[],
+): Promise<AttendanceLite[]> {
+  const all: AttendanceLite[] = []
+  // Chunk meeting ids too — long IN lists can break PostgREST
+  for (let i = 0; i < meetingIds.length; i += 50) {
+    const chunk = meetingIds.slice(i, i + 50)
+    let from = 0
+    for (;;) {
+      const { data, error } = await supabase
+        .from('attendances')
+        .select('student_id, meeting_id, status')
+        .in('meeting_id', chunk)
+        .range(from, from + PAGE_SIZE - 1)
+      if (error) throw error
+      const rows = (data ?? []) as AttendanceLite[]
+      all.push(...rows)
+      if (rows.length < PAGE_SIZE) break
+      from += PAGE_SIZE
+    }
+  }
+  return all
+}
+
+async function fetchStudentsByIds(
+  supabase: ReturnType<typeof createClient>,
+  studentIds: string[],
+) {
+  const studs: {
+    id: string
+    no_regis: string
+    first_name: string
+    last_name: string
+    major: string
+    status: StudentStatus
+  }[] = []
+
+  for (let i = 0; i < studentIds.length; i += ID_CHUNK) {
+    const chunk = studentIds.slice(i, i + ID_CHUNK)
+    const { data, error } = await supabase
+      .from('students')
+      .select('id, no_regis, first_name, last_name, major, status')
+      .in('id', chunk)
+      .order('last_name')
+    if (error) throw error
+    studs.push(...(data ?? []))
+  }
+
+  // Keep consistent A–Z by last_name across chunks
+  studs.sort((a, b) => {
+    const byLast = a.last_name.localeCompare(b.last_name, 'id', { sensitivity: 'base' })
+    if (byLast !== 0) return byLast
+    return a.first_name.localeCompare(b.first_name, 'id', { sensitivity: 'base' })
+  })
+  return studs
 }
 
 export default function RekapPage() {
@@ -38,121 +105,150 @@ export default function RekapPage() {
   const [pivotRows, setPivotRows] = useState<PivotRow[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Default: fokus event yang sudah ditutup agar status lengkap (H/L/X) langsung terlihat
   const [filterType, setFilterType] = useState<'ALL' | EventType>('ALL')
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'AKTIF' | 'DITUTUP' | 'ARCHIVED' | 'SEMUA'>('ALL')
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'AKTIF' | 'DITUTUP' | 'ARCHIVED' | 'SEMUA'>('DITUTUP')
   const [filterSearch, setFilterSearch] = useState('')
-  const [showAllStudents, setShowAllStudents] = useState(false) // Toggle untuk tampilkan semua mahasiswa
+  const [showAllStudents, setShowAllStudents] = useState(false)
   const [exporting, setExporting] = useState(false)
-  const [savingCell, setSavingCell] = useState<string | null>(null) // "studentId__meetingId"
+  const [savingCell, setSavingCell] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<{ totalMeetings: number; filteredMeetings: number } | null>(null)
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fetchGeneration = useRef(0)
 
   useEffect(() => {
     supabase.from('semesters').select('*').eq('is_active', true).single()
       .then(({ data }: { data: Semester | null }) => setActiveSemester(data))
   }, [supabase])
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (opts?: { silent?: boolean }) => {
     if (!activeSemester) return
-    setLoading(true)
+    const gen = ++fetchGeneration.current
+    if (!opts?.silent) setLoading(true)
 
-    // First, get total meetings count for debug
-    const { count: totalMeetingsCount } = await supabase
-      .from('meetings')
-      .select('*', { count: 'exact', head: true })
-      .eq('semester_id', activeSemester.id)
+    try {
+      const { count: totalMeetingsCount } = await supabase
+        .from('meetings')
+        .select('*', { count: 'exact', head: true })
+        .eq('semester_id', activeSemester.id)
 
-    let mQuery = supabase.from('meetings').select('*').eq('semester_id', activeSemester.id).order('tanggal')
-    
-    if (filterStatus === 'ALL') {
-      mQuery = mQuery.in('status', ['AKTIF', 'DITUTUP'])
-    } else if (filterStatus === 'SEMUA') {
-      // No status filter - show all meetings including DRAFT
-    } else {
-      mQuery = mQuery.eq('status', filterStatus)
-    }
+      let mQuery = supabase.from('meetings').select('*').eq('semester_id', activeSemester.id).order('tanggal')
 
-    if (filterType !== 'ALL') mQuery = mQuery.eq('event_type', filterType)
-    const { data: mData } = await mQuery
-    const filteredMeetings = mData ?? []
-    setMeetings(filteredMeetings)
+      if (filterStatus === 'ALL') {
+        mQuery = mQuery.in('status', ['AKTIF', 'DITUTUP'])
+      } else if (filterStatus === 'SEMUA') {
+        // no status filter
+      } else {
+        mQuery = mQuery.eq('status', filterStatus)
+      }
 
-    // Set debug info
-    setDebugInfo({
-      totalMeetings: totalMeetingsCount ?? 0,
-      filteredMeetings: filteredMeetings.length,
-    })
+      if (filterType !== 'ALL') mQuery = mQuery.eq('event_type', filterType)
+      const { data: mData } = await mQuery
+      if (gen !== fetchGeneration.current) return
 
-    // Show warning if some meetings are filtered out
-    if (totalMeetingsCount && totalMeetingsCount > filteredMeetings.length) {
-      const hiddenCount = totalMeetingsCount - filteredMeetings.length
-      toast.info(`⚠️ ${hiddenCount} event tidak ditampilkan karena filter status. Ubah filter untuk melihat semua event.`, {
-        duration: 5000,
+      const filteredMeetings = mData ?? []
+      setMeetings(filteredMeetings)
+      setDebugInfo({
+        totalMeetings: totalMeetingsCount ?? 0,
+        filteredMeetings: filteredMeetings.length,
       })
-    }
 
-    if (!filteredMeetings.length) { setPivotRows([]); setLoading(false); return }
-
-    const meetingIds = filteredMeetings.map((m: { id: string }) => m.id)
-    
-    // Ambil attendance data
-    const { data: atts } = await supabase
-      .from('attendances')
-      .select('student_id, meeting_id, status')
-      .in('meeting_id', meetingIds)
-
-    // Build lookup map
-    const attMap = new Map<string, AttendanceStatus>()
-    for (const a of atts ?? []) {
-      attMap.set(`${a.student_id}__${a.meeting_id}`, a.status as AttendanceStatus)
-    }
-
-    let studs: any[] = []
-
-    if (showAllStudents) {
-      // MODE: SEMUA MAHASISWA (termasuk yang tidak pernah hadir)
-      const { data: allStudents } = await supabase
-        .from('students')
-        .select('id, no_regis, first_name, last_name, major, status')
-        .order('last_name')
-      
-      studs = allStudents ?? []
-    } else {
-      // MODE: HANYA MAHASISWA YANG ADA ATTENDANCE (default)
-      const uniqueStudentIds = [...new Set((atts ?? []).map((a: { student_id: string }) => a.student_id))]
-      
-      if (uniqueStudentIds.length === 0) {
+      if (!filteredMeetings.length) {
         setPivotRows([])
-        setLoading(false)
         return
       }
 
-      const { data: attendedStudents } = await supabase
-        .from('students')
-        .select('id, no_regis, first_name, last_name, major, status')
-        .in('id', uniqueStudentIds)
-        .order('last_name')
-      
-      studs = attendedStudents ?? []
-    }
+      const meetingIds = filteredMeetings.map((m: { id: string }) => m.id)
+      const atts = await fetchAllAttendances(supabase, meetingIds)
+      if (gen !== fetchGeneration.current) return
 
-    const rows: PivotRow[] = studs.map((s: { id: string; no_regis: string; first_name: string; last_name: string; major: string; status: StudentStatus }) => {
-      const row: PivotRow = {
-        student_id: s.id,
-        no_regis: s.no_regis,
-        nama: `${s.last_name}, ${s.first_name}`,
-        major: s.major,
-        student_status: s.status,
+      const attMap = new Map<string, AttendanceStatus>()
+      for (const a of atts) {
+        attMap.set(`${a.student_id}__${a.meeting_id}`, a.status)
       }
-      for (const m of filteredMeetings) {
-        row[m.id] = attMap.get(`${s.id}__${m.id}`) ?? '—'
+
+      let studs: Awaited<ReturnType<typeof fetchStudentsByIds>> = []
+
+      if (showAllStudents) {
+        const { data: allStudents } = await supabase
+          .from('students')
+          .select('id, no_regis, first_name, last_name, major, status')
+          .order('last_name')
+        studs = allStudents ?? []
+      } else {
+        const uniqueStudentIds = [...new Set(atts.map(a => a.student_id))]
+        if (uniqueStudentIds.length === 0) {
+          setPivotRows([])
+          return
+        }
+        studs = await fetchStudentsByIds(supabase, uniqueStudentIds)
       }
-      return row
-    })
-    setPivotRows(rows)
-    setLoading(false)
+
+      if (gen !== fetchGeneration.current) return
+
+      const rows: PivotRow[] = studs.map(s => {
+        const row: PivotRow = {
+          student_id: s.id,
+          no_regis: s.no_regis,
+          nama: `${s.last_name}, ${s.first_name}`,
+          major: s.major,
+          student_status: s.status,
+        }
+        for (const m of filteredMeetings) {
+          row[m.id] = attMap.get(`${s.id}__${m.id}`) ?? '—'
+        }
+        return row
+      })
+      setPivotRows(rows)
+    } catch (e: unknown) {
+      toast.error('Gagal memuat rekap: ' + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      if (gen === fetchGeneration.current) setLoading(false)
+    }
   }, [supabase, activeSemester, filterType, filterStatus, showAllStudents])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  // Auto-refresh saat event ditutup / attendance di-generate (TIDAK_HADIR)
+  useEffect(() => {
+    if (!activeSemester) return
+
+    const scheduleRefresh = () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current)
+      // Debounce: close meeting insert banyak baris sekaligus
+      refreshTimer.current = setTimeout(() => {
+        fetchData({ silent: true })
+      }, 600)
+    }
+
+    const channel = supabase
+      .channel(`rekap-live-${activeSemester.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'attendances' },
+        scheduleRefresh,
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'meetings' },
+        scheduleRefresh,
+      )
+      .subscribe()
+
+    const onFocus = () => scheduleRefresh()
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') scheduleRefresh()
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current)
+      supabase.removeChannel(channel)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [supabase, activeSemester, fetchData])
 
   const displayRows = pivotRows.filter((r: PivotRow) =>
     !filterSearch || r.no_regis.toLowerCase().includes(filterSearch.toLowerCase()) || r.nama.toLowerCase().includes(filterSearch.toLowerCase()) || r.major.toLowerCase().includes(filterSearch.toLowerCase())
@@ -281,7 +377,9 @@ export default function RekapPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Rekap & Export</h1>
-          <p className="text-sm text-muted-foreground">Rekap presensi semua mahasiswa per event</p>
+          <p className="text-sm text-muted-foreground">
+            Rekap otomatis terbarui setelah event ditutup (status Hadir / Late / Tidak Hadir).
+          </p>
           {debugInfo && debugInfo.totalMeetings > debugInfo.filteredMeetings && (
             <p className="text-xs text-orange-600 font-medium mt-1">
               ⚠️ Menampilkan {debugInfo.filteredMeetings} dari {debugInfo.totalMeetings} event. Beberapa event tersembunyi karena filter status.
@@ -335,7 +433,7 @@ export default function RekapPage() {
           <SelectContent>
             <SelectItem value="ALL">Aktif & Ditutup</SelectItem>
             <SelectItem value="AKTIF">Aktif</SelectItem>
-            <SelectItem value="DITUTUP">Ditutup</SelectItem>
+            <SelectItem value="DITUTUP">Ditutup (lengkap)</SelectItem>
             <SelectItem value="ARCHIVED">Arsip</SelectItem>
             <SelectItem value="SEMUA">🔍 Semua (termasuk Draft)</SelectItem>
           </SelectContent>
@@ -369,12 +467,15 @@ export default function RekapPage() {
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : meetings.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground text-sm">
-              Belum ada event yang aktif atau ditutup{filterType !== 'ALL' ? ` untuk tipe "${EVENT_TYPE_LABELS[filterType]}"` : ''}
+              Belum ada event untuk filter ini{filterType !== 'ALL' ? ` (tipe "${EVENT_TYPE_LABELS[filterType]}")` : ''}.
+              {filterStatus === 'DITUTUP' && (
+                <p className="text-xs mt-2">Tutup event di monitor presensi agar status lengkap muncul di sini.</p>
+              )}
             </div>
           ) : displayRows.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground text-sm">
               <p className="font-medium">Tidak ada data kehadiran untuk ditampilkan.</p>
-              <p className="text-xs mt-2">Mahasiswa akan muncul di rekap setelah melakukan scan di salah satu event yang dipilih.</p>
+              <p className="text-xs mt-2">Setelah event ditutup, status Hadir / Late / Tidak Hadir akan muncul otomatis.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -390,6 +491,7 @@ export default function RekapPage() {
                         <div className="truncate max-w-24" title={m.nama_event}>{m.nama_event}</div>
                         <div className="text-muted-foreground font-normal">{m.tanggal}</div>
                         {m.status === 'AKTIF' && <span className="inline-block mt-0.5 rounded-full bg-green-100 text-green-700 px-1.5 py-0 text-[10px] font-medium">Aktif</span>}
+                        {m.status === 'DITUTUP' && <span className="inline-block mt-0.5 rounded-full bg-blue-100 text-blue-700 px-1.5 py-0 text-[10px] font-medium">Ditutup</span>}
                       </th>
                     ))}
                   </tr>
