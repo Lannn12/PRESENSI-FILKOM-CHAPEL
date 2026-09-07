@@ -49,18 +49,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Event berstatus ${meeting.status}. Presensi tidak dapat direkam.` }, { status: 403 })
     }
 
-    // NEW: Time-based auto-validation
+    // NEW: Time-based auto-close — jika end_time sudah lewat, tutup meeting sekarang
     if (meeting.end_time) {
       const now = new Date()
-      // Create a date object for the end_time today
       const [hours, minutes, seconds] = meeting.end_time.split(':').map(Number)
-      const meetingEnd = new Date(meeting.tanggal)
-      meetingEnd.setHours(hours, minutes, seconds || 0)
+      // Gunakan tanggal meeting + jam dalam UTC untuk konsistensi dengan server Vercel
+      const meetingEnd = new Date(`${meeting.tanggal}T${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds||0).padStart(2,'0')}+07:00`)
 
       if (now > meetingEnd) {
-        return NextResponse.json({ 
-          error: 'Waktu presensi untuk event ini telah berakhir.',
-          auto_close_triggered: true 
+        // Benar-benar tutup meeting dan generate TIDAK_HADIR (fire-and-forget, non-blocking)
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`
+        fetch(`${baseUrl}/api/meetings/${meeting.id}/close`, {
+          method: 'POST',
+          headers: { 'Cookie': req.headers.get('cookie') ?? '' },
+        }).catch(() => {/* fire and forget */})
+
+        return NextResponse.json({
+          error: 'Waktu presensi untuk event ini telah berakhir. Event sedang ditutup otomatis.',
+          auto_close_triggered: true,
         }, { status: 403 })
       }
     }

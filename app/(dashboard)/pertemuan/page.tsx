@@ -10,9 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, Loader2, Link2, QrCode, Eye, Trash2, ExternalLink, KeyRound, Archive, ArchiveRestore } from 'lucide-react'
+import { Plus, Loader2, Link2, QrCode, Eye, Trash2, ExternalLink, KeyRound, Archive, ArchiveRestore, Lock } from 'lucide-react'
 import { toast } from 'sonner'
-import { hashPin } from '@/lib/hash'
 import { QRCodeSVG as QRCode } from 'qrcode.react'
 import { Switch } from '@/components/ui/switch'
 import type { Meeting, AbsenterGroup, Semester, EventType, EventStatus } from '@/lib/types'
@@ -30,6 +29,9 @@ export default function PertemuanPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [qrMeeting, setQrMeeting] = useState<Meeting | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  // Konfirmasi tutup event (agar tidak tidak sengaja klik DITUTUP di dropdown)
+  const [closeConfirmId, setCloseConfirmId] = useState<string | null>(null)
+  const [closing, setClosing] = useState(false)
 
   const [form, setForm] = useState({
     nama_event: '',
@@ -83,18 +85,18 @@ export default function PertemuanPage() {
   }
 
   async function handleStatusChange(meetingId: string, newStatus: EventStatus) {
-    // Auto-generate 6-digit PIN when activating
+    // Jika ingin menutup event → arahkan ke closeMeeting API agar TIDAK_HADIR ter-generate
+    if (newStatus === 'DITUTUP') {
+      setCloseConfirmId(meetingId)
+      return
+    }
+
     const updateData: Record<string, unknown> = { status: newStatus }
     if (newStatus === 'AKTIF') {
       const pin = String(Math.floor(100000 + Math.random() * 900000))
-      // Store plain PIN in database (for absenter verification)
       updateData.scanner_pin = pin
       const { error } = await supabase.from('meetings').update(updateData).eq('id', meetingId)
-      if (error) { 
-        console.error('Failed to update status:', error)
-        toast.error('Gagal update status: ' + error.message)
-        return 
-      }
+      if (error) { toast.error('Gagal update status: ' + error.message); return }
       toast.success(`Event diaktifkan! PIN Absenter: ${pin}`, { duration: 10000 })
       fetchAll()
       return
@@ -102,13 +104,29 @@ export default function PertemuanPage() {
       updateData.scanner_pin = null
     }
     const { error } = await supabase.from('meetings').update(updateData).eq('id', meetingId)
-    if (error) { 
-      console.error('Failed to update status:', error)
-      toast.error('Gagal update status: ' + error.message)
-      return 
-    }
+    if (error) { toast.error('Gagal update status: ' + error.message); return }
     toast.success('Status diperbarui')
     fetchAll()
+  }
+
+  async function handleCloseMeeting() {
+    if (!closeConfirmId) return
+    setClosing(true)
+    try {
+      const res = await fetch(`/api/meetings/${closeConfirmId}/close`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? 'Gagal menutup event.')
+      } else {
+        toast.success(`Event ditutup. ${data.absent_inserted} mahasiswa dicatat TIDAK_HADIR.`, { duration: 6000 })
+        fetchAll()
+      }
+    } catch {
+      toast.error('Gagal menutup event.')
+    } finally {
+      setClosing(false)
+      setCloseConfirmId(null)
+    }
   }
 
   async function handleDelete() {
@@ -374,6 +392,29 @@ export default function PertemuanPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>Batal</Button>
             <Button variant="destructive" onClick={handleDelete}>Hapus Permanen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tutup Event confirm — memanggil closeMeeting API agar TIDAK_HADIR ter-generate */}
+      <Dialog open={!!closeConfirmId} onOpenChange={(o) => { if (!o && !closing) setCloseConfirmId(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-red-500" />
+              Tutup Event?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Event akan ditutup dan semua mahasiswa yang belum scan akan otomatis dicatat{' '}
+            <strong>TIDAK_HADIR</strong>. Setelah ditutup, data siap diexport. Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloseConfirmId(null)} disabled={closing}>Batal</Button>
+            <Button variant="destructive" onClick={handleCloseMeeting} disabled={closing}>
+              {closing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Lock className="h-4 w-4 mr-1" />}
+              Tutup & Generate Absen
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

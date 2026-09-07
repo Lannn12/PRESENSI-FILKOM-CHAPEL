@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { Loader2, Download, Filter, FileSpreadsheet, FileText, FileDown, ChevronDown } from 'lucide-react'
+import { Loader2, Download, Filter, FileSpreadsheet, FileText, FileDown, ChevronDown, UserX } from 'lucide-react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import type { Semester, Meeting, AttendanceStatus, EventType, StudentStatus } from '@/lib/types'
@@ -115,6 +116,15 @@ export default function RekapPage() {
   const [debugInfo, setDebugInfo] = useState<{ totalMeetings: number; filteredMeetings: number } | null>(null)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fetchGeneration = useRef(0)
+
+  // Bulk mark kosong → TIDAK_HADIR
+  // confirmTarget: { type: 'meeting', id, label } | { type: 'student', id, nama }
+  const [confirmTarget, setConfirmTarget] = useState<
+    | { type: 'meeting'; id: string; label: string }
+    | { type: 'student'; id: string; nama: string }
+    | null
+  >(null)
+  const [bulkSaving, setBulkSaving] = useState(false)
 
   useEffect(() => {
     supabase.from('semesters').select('*').eq('is_active', true).single()
@@ -305,10 +315,73 @@ export default function RekapPage() {
     }
   }
 
-  // Export helpers
-  function getExportData() {
+  // Bulk: tandai semua "—" di satu kolom event sebagai TIDAK_HADIR
+  async function handleBulkMarkAbsent() {
+    if (!confirmTarget) return
+    setBulkSaving(true)
+
+    try {
+      let inserts: { student_id: string; meeting_id: string; status: string }[] = []
+
+      if (confirmTarget.type === 'meeting') {
+        // Semua baris yang nilai di kolom ini masih "—"
+        inserts = pivotRows
+          .filter(r => r[confirmTarget.id] === '—')
+          .map(r => ({ student_id: r.student_id, meeting_id: confirmTarget.id, status: 'TIDAK_HADIR' }))
+      } else {
+        // Semua kolom meeting di baris mahasiswa ini yang masih "—"
+        const row = pivotRows.find(r => r.student_id === confirmTarget.id)
+        if (row) {
+          inserts = meetings
+            .filter(m => row[m.id] === '—')
+            .map(m => ({ student_id: confirmTarget.id, meeting_id: m.id, status: 'TIDAK_HADIR' }))
+        }
+      }
+
+      if (inserts.length === 0) {
+        toast.info('Tidak ada status kosong untuk diubah.')
+        setConfirmTarget(null)
+        setBulkSaving(false)
+        return
+      }
+
+      // Insert in chunks of 200
+      const CHUNK = 200
+      for (let i = 0; i < inserts.length; i += CHUNK) {
+        const { error } = await supabase
+          .from('attendances')
+          .insert(inserts.slice(i, i + CHUNK))
+        if (error) throw error
+      }
+
+      // Update local state tanpa refetch
+      setPivotRows(prev => prev.map(r => {
+        if (confirmTarget.type === 'meeting') {
+          if (r[confirmTarget.id] !== '—') return r
+          return { ...r, [confirmTarget.id]: 'TIDAK_HADIR' }
+        } else {
+          if (r.student_id !== confirmTarget.id) return r
+          const updated = { ...r }
+          for (const m of meetings) {
+            if (updated[m.id] === '—') updated[m.id] = 'TIDAK_HADIR'
+          }
+          return updated
+        }
+      }))
+
+      toast.success(`${inserts.length} status berhasil diubah ke Tidak Hadir.`)
+    } catch (e: unknown) {
+      toast.error('Gagal: ' + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setBulkSaving(false)
+      setConfirmTarget(null)
+    }
+  }
+
+  // Export helpers — selalu export pivotRows (semua data), bukan displayRows yang sudah difilter search
+  function getExportData(sourceRows: PivotRow[] = pivotRows) {
     const headers = ['No. Reg', 'Nama', 'Prodi', 'Status', ...meetings.map((m: Meeting) => `${m.nama_event} (${m.tanggal})`)]
-    const rows = displayRows.map((r: PivotRow) => [
+    const rows = sourceRows.map((r: PivotRow) => [
       r.no_regis,
       r.nama,
       r.major,
@@ -326,9 +399,16 @@ export default function RekapPage() {
   }
 
   async function handleExport(format: 'xlsx' | 'csv' | 'pdf') {
+    // Jika search filter aktif, export semua data (pivotRows), bukan hanya yang terfilter
+    const isSearchActive = filterSearch.trim().length > 0
+    const exportRows = pivotRows // selalu semua data
+    if (isSearchActive) {
+      toast.info(`Mengexport semua ${pivotRows.length} mahasiswa (filter pencarian diabaikan saat export).`, { duration: 4000 })
+    }
+
     setExporting(true)
     try {
-      const { headers, rows } = getExportData()
+      const { headers, rows } = getExportData(exportRows)
 
       if (format === 'xlsx' || format === 'csv') {
         const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
@@ -336,7 +416,7 @@ export default function RekapPage() {
         const wb = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi')
         XLSX.writeFile(wb, getFileName(format), { bookType: format })
-        toast.success(`File ${format.toUpperCase()} berhasil diexport!`)
+        toast.success(`File ${format.toUpperCase()} berhasil diexport! (${rows.length} mahasiswa)`)
       } else if (format === 'pdf') {
         const { default: jsPDF } = await import('jspdf')
         const autoTable = (await import('jspdf-autotable')).default
@@ -344,7 +424,7 @@ export default function RekapPage() {
         doc.setFontSize(12)
         doc.text(`Rekap Presensi — ${activeSemester?.nama ?? ''}`, 14, 15)
         doc.setFontSize(8)
-        doc.text(`Diekspor: ${new Date().toLocaleDateString('id-ID')}`, 14, 20)
+        doc.text(`Diekspor: ${new Date().toLocaleDateString('id-ID')} · ${rows.length} mahasiswa`, 14, 20)
         autoTable(doc, {
           head: [headers],
           body: rows,
@@ -355,7 +435,7 @@ export default function RekapPage() {
           columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 25 }, 3: { cellWidth: 18 } },
         })
         doc.save(getFileName('pdf'))
-        toast.success('File PDF berhasil diexport!')
+        toast.success(`File PDF berhasil diexport! (${rows.length} mahasiswa)`)
       }
     } catch {
       toast.error('Gagal export.')
@@ -486,14 +566,29 @@ export default function RekapPage() {
                     <th className="sticky left-28 bg-muted/50 px-3 py-2 text-left font-medium text-xs min-w-44">Nama</th>
                     <th className="px-3 py-2 text-left font-medium text-xs min-w-32">Prodi</th>
                     <th className="px-3 py-2 text-center font-medium text-xs min-w-20">Status</th>
-                    {meetings.map((m: Meeting) => (
-                      <th key={m.id} className="px-2 py-2 text-center font-medium text-xs min-w-24">
-                        <div className="truncate max-w-24" title={m.nama_event}>{m.nama_event}</div>
-                        <div className="text-muted-foreground font-normal">{m.tanggal}</div>
-                        {m.status === 'AKTIF' && <span className="inline-block mt-0.5 rounded-full bg-green-100 text-green-700 px-1.5 py-0 text-[10px] font-medium">Aktif</span>}
-                        {m.status === 'DITUTUP' && <span className="inline-block mt-0.5 rounded-full bg-blue-100 text-blue-700 px-1.5 py-0 text-[10px] font-medium">Ditutup</span>}
-                      </th>
-                    ))}
+                    {meetings.map((m: Meeting) => {
+                      // Hitung berapa "—" di kolom ini
+                      const emptyCount = pivotRows.filter(r => r[m.id] === '—').length
+                      return (
+                        <th key={m.id} className="px-2 py-2 text-center font-medium text-xs min-w-24">
+                          <div className="truncate max-w-24" title={m.nama_event}>{m.nama_event}</div>
+                          <div className="text-muted-foreground font-normal">{m.tanggal}</div>
+                          {m.status === 'AKTIF' && <span className="inline-block mt-0.5 rounded-full bg-green-100 text-green-700 px-1.5 py-0 text-[10px] font-medium">Aktif</span>}
+                          {m.status === 'DITUTUP' && <span className="inline-block mt-0.5 rounded-full bg-blue-100 text-blue-700 px-1.5 py-0 text-[10px] font-medium">Ditutup</span>}
+                          {/* Tombol bulk mark per kolom event */}
+                          {emptyCount > 0 && (
+                            <button
+                              onClick={() => setConfirmTarget({ type: 'meeting', id: m.id, label: m.nama_event })}
+                              className="mt-1 flex items-center gap-0.5 mx-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors"
+                              title={`Tandai ${emptyCount} yang kosong sebagai Tidak Hadir`}
+                            >
+                              <UserX className="h-2.5 w-2.5" />
+                              {emptyCount} kosong → X
+                            </button>
+                          )}
+                        </th>
+                      )
+                    })}
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -506,6 +601,17 @@ export default function RekapPage() {
                         <Badge variant="outline" className={`text-[10px] px-1.5 py-0.5 ${row.student_status === 'MAGANG' ? 'bg-orange-100 text-orange-800 border-orange-500/30' : 'bg-green-100 text-green-800 border-green-500/30'}`}>
                           {row.student_status === 'MAGANG' ? '🏢 Magang' : 'Aktif'}
                         </Badge>
+                        {/* Tombol bulk mark per baris mahasiswa */}
+                        {meetings.some(m => row[m.id] === '—') && (
+                          <button
+                            onClick={() => setConfirmTarget({ type: 'student', id: row.student_id, nama: row.nama })}
+                            className="mt-1 flex items-center gap-0.5 mx-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors"
+                            title="Tandai semua yang kosong sebagai Tidak Hadir"
+                          >
+                            <UserX className="h-2.5 w-2.5" />
+                            Isi kosong → X
+                          </button>
+                        )}
                       </td>
                       {meetings.map((m: Meeting) => {
                         const val = row[m.id] as string
@@ -565,7 +671,45 @@ export default function RekapPage() {
         <span className="flex items-center gap-1"><span className="inline-block rounded px-1.5 py-0.5 bg-green-100 text-green-800 font-medium">H</span> HADIR</span>
         <span className="flex items-center gap-1"><span className="inline-block rounded px-1.5 py-0.5 bg-yellow-100 text-yellow-800 font-medium">L</span> LATE</span>
         <span className="flex items-center gap-1"><span className="inline-block rounded px-1.5 py-0.5 bg-red-100 text-red-800 font-medium">X</span> TIDAK HADIR</span>
+        <span className="flex items-center gap-1 text-red-400"><UserX className="h-3 w-3" /> tombol merah = isi status kosong (—) → Tidak Hadir</span>
       </div>
+
+      {/* Dialog konfirmasi bulk mark */}
+      <Dialog open={!!confirmTarget} onOpenChange={(open) => { if (!open && !bulkSaving) setConfirmTarget(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserX className="h-5 w-5 text-red-500" />
+              Tandai Kosong sebagai Tidak Hadir?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-muted-foreground">
+            {confirmTarget?.type === 'meeting' ? (
+              <p>
+                Semua mahasiswa yang statusnya <strong>kosong (—)</strong> di event{' '}
+                <strong className="text-foreground">"{confirmTarget.label}"</strong> akan diubah menjadi{' '}
+                <span className="inline-block rounded px-1.5 py-0.5 bg-red-100 text-red-800 text-xs font-medium">X Tidak Hadir</span>.
+              </p>
+            ) : (
+              <p>
+                Semua event yang statusnya <strong>kosong (—)</strong> untuk mahasiswa{' '}
+                <strong className="text-foreground">"{confirmTarget?.nama}"</strong> akan diubah menjadi{' '}
+                <span className="inline-block rounded px-1.5 py-0.5 bg-red-100 text-red-800 text-xs font-medium">X Tidak Hadir</span>.
+              </p>
+            )}
+            <p className="text-xs">Status yang sudah terisi (H / L / X) tidak akan terpengaruh.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmTarget(null)} disabled={bulkSaving}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={handleBulkMarkAbsent} disabled={bulkSaving}>
+              {bulkSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <UserX className="h-4 w-4 mr-1" />}
+              Ya, Tandai Tidak Hadir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

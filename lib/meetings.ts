@@ -22,24 +22,17 @@ export async function closeMeeting(meetingId: string) {
   // 2. Determine target students
   let studentIds: string[] = []
   if (meeting.absenter_group_id) {
+    // Event pakai absenter group → hanya anggota group tersebut
     const { data: members } = await supabase
       .from('absenter_group_members')
       .select('student_id')
       .eq('group_id', meeting.absenter_group_id)
     studentIds = (members ?? []).map((m: { student_id: string }) => m.student_id)
   } else {
-    const { data: sections } = await supabase
-      .from('student_sections')
-      .select('student_id')
-      .eq('semester_id', meeting.semester_id)
-    
-    if (sections && sections.length > 0) {
-      studentIds = sections.map((s: { student_id: string }) => s.student_id)
-    } else {
-      // Fallback: all students in DB
-      const { data: all } = await supabase.from('students').select('id')
-      studentIds = (all ?? []).map((s: { id: string }) => s.id)
-    }
+    // Event tanpa absenter group → semua mahasiswa yang ada di DB
+    // (student_sections hanya untuk seating, bukan untuk menentukan siapa yang wajib hadir)
+    const { data: all } = await supabase.from('students').select('id')
+    studentIds = (all ?? []).map((s: { id: string }) => s.id)
   }
 
   // 3. Get who already attended
@@ -50,9 +43,20 @@ export async function closeMeeting(meetingId: string) {
   
   const attendedIds = new Set((attended ?? []).map(a => a.student_id))
 
-  // 4. Fill in missing attendances as 'TIDAK_HADIR'
+  // 4. Update meeting status DULU sebelum insert absensi
+  //    Ini memastikan request kedua (race condition) akan return 'Already closed' lebih awal
+  const { error: updErr } = await supabase
+    .from('meetings')
+    .update({ status: 'DITUTUP' })
+    .eq('id', meetingId)
+    .eq('status', 'AKTIF') // hanya update jika masih AKTIF (atomic guard)
+
+  if (updErr) throw new Error(`Failed to update status: ${updErr.message}`)
+
+  // 5. Fill in missing attendances as 'TIDAK_HADIR' menggunakan upsert
+  //    onConflict: 'student_id,meeting_id' → idempotent, aman jika dipanggil dua kali
   const missing = studentIds.filter(id => !attendedIds.has(id))
-  
+
   if (missing.length > 0) {
     const inserts = missing.map(id => ({
       student_id: id,
@@ -61,23 +65,18 @@ export async function closeMeeting(meetingId: string) {
       waktu_scan: null,
     }))
 
-    // Batch insert in chunks of 500
+    // Batch upsert in chunks of 500 — duplicate-safe
     for (let i = 0; i < inserts.length; i += 500) {
       const { error } = await supabase
         .from('attendances')
-        .insert(inserts.slice(i, i + 500))
-      
-      if (error) throw new Error(`Failed to insert TIDAK_HADIR: ${error.message}`)
+        .upsert(inserts.slice(i, i + 500), {
+          onConflict: 'student_id,meeting_id',
+          ignoreDuplicates: true, // jangan overwrite HADIR/LATE yang sudah ada
+        })
+
+      if (error) throw new Error(`Failed to upsert TIDAK_HADIR: ${error.message}`)
     }
   }
-
-  // 5. Update meeting status
-  const { error: updErr } = await supabase
-    .from('meetings')
-    .update({ status: 'DITUTUP' })
-    .eq('id', meetingId)
-
-  if (updErr) throw new Error(`Failed to update status: ${updErr.message}`)
 
   return { success: true, absent_inserted: missing.length }
 }

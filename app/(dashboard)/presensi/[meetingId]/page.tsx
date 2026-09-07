@@ -28,9 +28,18 @@ interface AttendanceRow {
   student: { no_regis: string; first_name: string; last_name: string; major: string }
 }
 
-type ListFilter = 'SCAN' | 'ALL' | 'HADIR' | 'TIDAK_HADIR'
+// Mahasiswa terdaftar yang belum scan sama sekali (tidak ada record attendance)
+interface EnrolledStudent {
+  id: string
+  no_regis: string
+  first_name: string
+  last_name: string
+  major: string
+}
 
-function studentName(s: AttendanceRow['student']) {
+type ListFilter = 'SCAN' | 'ALL' | 'HADIR' | 'TIDAK_HADIR' | 'BELUM_SCAN'
+
+function studentName(s: { first_name: string; last_name: string }) {
   return `${s.last_name}, ${s.first_name}`
 }
 
@@ -71,14 +80,17 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
 
   const [meeting, setMeeting] = useState<Meeting | null>(null)
   const [attendances, setAttendances] = useState<AttendanceRow[]>([])
+  // Semua mahasiswa terdaftar untuk event ini (dari absenter_group / student_sections / semua students)
+  const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([])
   const [loadingInit, setLoadingInit] = useState(true)
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [closing, setClosing] = useState(false)
   const [exporting, setExporting] = useState(false)
-  const [totalEnrolled, setTotalEnrolled] = useState<number | null>(null)
   const [listFilter, setListFilter] = useState<ListFilter>('SCAN')
 
   const isClosed = meeting?.status === 'DITUTUP' || meeting?.status === 'ARCHIVED'
+  // Total enrolled = jumlah mahasiswa terdaftar (sama dengan logika closeMeeting)
+  const totalEnrolled = enrolledStudents.length > 0 ? enrolledStudents.length : null
 
   const fetchAttendances = useCallback(async (closed?: boolean) => {
     const includeAbsent = closed ?? false
@@ -97,26 +109,46 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
     setAttendances((data ?? []) as AttendanceRow[])
   }, [supabase, meetingId])
 
+  // Ambil daftar semua mahasiswa terdaftar untuk event ini
+  // Logika identik dengan closeMeeting di lib/meetings.ts
+  const fetchEnrolledStudents = useCallback(async (m: Meeting) => {
+    let students: EnrolledStudent[] = []
+
+    if (m.absenter_group_id) {
+      // Event pakai absenter group → ambil members group ini
+      const { data: members } = await supabase
+        .from('absenter_group_members')
+        .select('student:students(id, no_regis, first_name, last_name, major)')
+        .eq('group_id', m.absenter_group_id)
+      students = ((members ?? []).map((mem: any) => mem.student).filter(Boolean)) as EnrolledStudent[]
+    } else {
+      // Event tanpa absenter group → semua mahasiswa di DB
+      // (student_sections hanya untuk seating, bukan enrollment presensi)
+      const { data: all } = await supabase
+        .from('students')
+        .select('id, no_regis, first_name, last_name, major')
+        .order('last_name')
+      students = (all ?? []) as EnrolledStudent[]
+    }
+
+    setEnrolledStudents(students)
+  }, [supabase])
+
   useEffect(() => {
     async function init() {
       const { data: m } = await supabase.from('meetings').select('*').eq('id', meetingId).single()
       setMeeting(m)
       const closed = m?.status === 'DITUTUP' || m?.status === 'ARCHIVED'
       if (closed) setListFilter('ALL')
-      await fetchAttendances(closed)
-      if (m) {
-        if (m.absenter_group_id) {
-          const { count } = await supabase.from('absenter_group_members').select('id', { count: 'exact', head: true }).eq('group_id', m.absenter_group_id)
-          setTotalEnrolled(count ?? null)
-        } else {
-          const { count } = await supabase.from('student_sections').select('id', { count: 'exact', head: true }).eq('semester_id', m.semester_id)
-          setTotalEnrolled(count ?? null)
-        }
-      }
+      // Jalankan paralel: fetch attendances + enrolled students
+      await Promise.all([
+        fetchAttendances(closed),
+        m ? fetchEnrolledStudents(m) : Promise.resolve(),
+      ])
       setLoadingInit(false)
     }
     init()
-  }, [supabase, meetingId, fetchAttendances])
+  }, [supabase, meetingId, fetchAttendances, fetchEnrolledStudents])
 
   // Supabase Realtime subscription (only while event is active)
   useEffect(() => {
@@ -169,11 +201,25 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
     [attendances],
   )
 
+  // Mahasiswa terdaftar yang BELUM scan sama sekali (belum ada di tabel attendances)
+  const belumScanRows = useMemo(() => {
+    const scannedIds = new Set(attendances.map(a => a.student.no_regis))
+    return enrolledStudents
+      .filter(s => !scannedIds.has(s.no_regis))
+      .sort((a, b) => a.last_name.localeCompare(b.last_name, 'id', { sensitivity: 'base' }))
+  }, [attendances, enrolledStudents])
+
   const displayedRows = useMemo(() => {
-    // Saat live scan: tetap urut waktu scan terbaru
-    if (!isClosed || listFilter === 'SCAN') return presentRows
+    if (!isClosed) {
+      // Live: tampilkan yang sudah scan (urut waktu terbaru)
+      if (listFilter === 'BELUM_SCAN') return [] // handled separately
+      return presentRows
+    }
+    // Closed: tampilkan berdasarkan filter
+    if (listFilter === 'SCAN') return presentRows
     if (listFilter === 'HADIR') return sortByStudentName(presentRows)
     if (listFilter === 'TIDAK_HADIR') return sortByStudentName(absentRows)
+    if (listFilter === 'BELUM_SCAN') return [] // handled separately
     return sortByStudentName([...presentRows, ...absentRows])
   }, [isClosed, listFilter, presentRows, absentRows])
 
@@ -308,7 +354,7 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
         </div>
 
         {/* Live counter cards */}
-        <div className={`grid gap-3 ${isClosed ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
+        <div className={`grid gap-3 ${isClosed ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-4'}`}>
           <Card>
             <CardContent className="py-3 text-center">
               <p className="text-3xl font-bold text-green-600">{hadir}</p>
@@ -326,6 +372,14 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
               <CardContent className="py-3 text-center">
                 <p className="text-3xl font-bold text-red-600">{tidakHadir}</p>
                 <p className="text-xs text-muted-foreground">TIDAK HADIR</p>
+              </CardContent>
+            </Card>
+          )}
+          {!isClosed && (
+            <Card className={belumScanRows.length > 0 ? 'border-orange-200' : ''}>
+              <CardContent className="py-3 text-center">
+                <p className="text-3xl font-bold text-orange-500">{belumScanRows.length}</p>
+                <p className="text-xs text-muted-foreground">BELUM SCAN</p>
               </CardContent>
             </Card>
           )}
@@ -360,11 +414,37 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                {isClosed ? `Data Presensi (${displayedRows.length})` : `Riwayat Scan (${presentRows.length})`}
+                {listFilter === 'BELUM_SCAN'
+                  ? `Belum Scan (${belumScanRows.length})`
+                  : isClosed
+                    ? `Data Presensi (${displayedRows.length})`
+                    : `Riwayat Scan (${presentRows.length})`}
               </CardTitle>
-              {isClosed && (
-                <div className="flex flex-wrap gap-1.5">
-                  {(
+              <div className="flex flex-wrap gap-1.5">
+                {/* Tab saat AKTIF: Sudah Scan + Belum Scan */}
+                {!isClosed && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant={listFilter === 'SCAN' ? 'default' : 'outline'}
+                      className="h-7 text-xs"
+                      onClick={() => setListFilter('SCAN')}
+                    >
+                      Sudah Scan ({presentRows.length})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={listFilter === 'BELUM_SCAN' ? 'default' : 'outline'}
+                      className={`h-7 text-xs ${listFilter !== 'BELUM_SCAN' && belumScanRows.length > 0 ? 'border-orange-300 text-orange-600 hover:bg-orange-50' : ''}`}
+                      onClick={() => setListFilter('BELUM_SCAN')}
+                    >
+                      Belum Scan ({belumScanRows.length})
+                    </Button>
+                  </>
+                )}
+                {/* Tab saat DITUTUP: Semua, Hadir, Tidak Hadir */}
+                {isClosed && (
+                  (
                     [
                       { key: 'ALL', label: 'Semua' },
                       { key: 'HADIR', label: 'Hadir' },
@@ -380,13 +460,49 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
                     >
                       {f.label}
                     </Button>
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {displayedRows.length === 0 ? (
+            {/* Tab Belum Scan */}
+            {listFilter === 'BELUM_SCAN' ? (
+              belumScanRows.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8 text-sm">
+                  🎉 Semua mahasiswa terdaftar sudah scan!
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>#</TableHead>
+                        <TableHead>Nama</TableHead>
+                        <TableHead>No. Reg</TableHead>
+                        <TableHead>Prodi</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {belumScanRows.map((s, i) => (
+                        <TableRow key={s.id} className="bg-orange-50/50">
+                          <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                          <TableCell className="text-sm">{studentName(s)}</TableCell>
+                          <TableCell className="text-xs font-mono">{s.no_regis}</TableCell>
+                          <TableCell className="text-xs">{s.major}</TableCell>
+                          <TableCell>
+                            <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">
+                              Belum Scan
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )
+            ) : displayedRows.length === 0 ? (
               <p className="text-center text-muted-foreground py-8 text-sm">
                 {isClosed ? 'Tidak ada data untuk filter ini.' : 'Belum ada scan'}
               </p>
