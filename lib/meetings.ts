@@ -1,6 +1,33 @@
 import { createServiceClient } from '@/lib/supabase/server'
 
 /**
+ * Offset timezone untuk seluruh perhitungan waktu meeting.
+ *
+ * PENTING: semua tempat yang menghitung "sudah lewat end_time?" HARUS memakai
+ * helper ini. Sebelumnya `app/api/cron/auto-close` memakai `setHours()` (jam
+ * lokal server = UTC di Vercel) sementara `app/api/scan` memakai offset
+ * hard-coded +07:00 — hasilnya cron menutup event ~7 jam terlalu awal.
+ *
+ * Ganti ke '+08:00' (WITA) bila waktu operasional memakai Waktu Indonesia
+ * Tengah.
+ */
+export const MEETING_TIMEZONE_OFFSET = '+07:00'
+
+/**
+ * Gabungkan tanggal + jam meeting menjadi satu titik waktu absolut.
+ * Mengembalikan null bila input tidak valid atau `time` kosong.
+ */
+export function getMeetingDateTime(date: string, time: string | null | undefined): Date | null {
+  if (!date || !time) return null
+  const [h, m, s] = time.split(':').map(Number)
+  const hh = String(Number.isFinite(h) ? h : 0).padStart(2, '0')
+  const mm = String(Number.isFinite(m) ? m : 0).padStart(2, '0')
+  const ss = String(Number.isFinite(s) ? s : 0).padStart(2, '0')
+  const d = new Date(`${date}T${hh}:${mm}:${ss}${MEETING_TIMEZONE_OFFSET}`)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/**
  * Closes a meeting:
  * 1. Finds all students who should have attended (based on absenter group or semester).
  * 2. Marks students who didn't scan as 'TIDAK_HADIR'.
@@ -18,6 +45,11 @@ export async function closeMeeting(meetingId: string) {
 
   if (meetErr || !meeting) throw new Error('Meeting not found.')
   if (meeting.status === 'DITUTUP') return { success: true, message: 'Already closed.' }
+  if (meeting.status !== 'AKTIF') {
+    // Hanya event AKTIF yang bisa ditutup. Tanpa guard ini, event DRAFT akan
+    // tetap berstatus DRAFT padahal semua mahasiswa sudah ditulis TIDAK_HADIR.
+    throw new Error(`Event tidak berstatus AKTIF (sekarang: ${meeting.status}).`)
+  }
 
   // 2. Determine target students
   let studentIds: string[] = []
@@ -45,13 +77,20 @@ export async function closeMeeting(meetingId: string) {
 
   // 4. Update meeting status DULU sebelum insert absensi
   //    Ini memastikan request kedua (race condition) akan return 'Already closed' lebih awal
-  const { error: updErr } = await supabase
+  const { data: updatedRows, error: updErr } = await supabase
     .from('meetings')
     .update({ status: 'DITUTUP' })
     .eq('id', meetingId)
     .eq('status', 'AKTIF') // hanya update jika masih AKTIF (atomic guard)
+    .select('id')
 
   if (updErr) throw new Error(`Failed to update status: ${updErr.message}`)
+
+  // Guard atomik: kalau tidak ada baris yang berubah, berarti request paralel
+  // lain sudah menutup event ini lebih dulu. Jangan lanjut menulis absensi.
+  if (!updatedRows || updatedRows.length === 0) {
+    return { success: true, message: 'Already closed.', absent_inserted: 0 }
+  }
 
   // 5. Fill in missing attendances as 'TIDAK_HADIR' menggunakan upsert
   //    onConflict: 'student_id,meeting_id' → idempotent, aman jika dipanggil dua kali

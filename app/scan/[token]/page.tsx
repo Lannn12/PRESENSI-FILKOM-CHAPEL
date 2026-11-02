@@ -302,54 +302,46 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   /* ── Splash Screen — premium branding intro ───────────────── */
   if (showSplash || loadingInit) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #0c1a5e 0%, #1a3590 50%, #1e50c8 100%)' }}
-      >
-        {/* Dot pattern */}
-        <div className="absolute inset-0 opacity-20"
-          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-        {/* Glowing orbs */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full opacity-10 blur-3xl" style={{ background: 'radial-gradient(circle, #60a5fa, transparent)' }} />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full opacity-10 blur-3xl" style={{ background: 'radial-gradient(circle, #93c5fd, transparent)' }} />
+      <div className="tubes-canvas min-h-screen flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 tubes-grain" />
 
         <div className="relative z-10 text-center space-y-10 px-8 animate-in fade-in zoom-in-95 duration-700">
           {/* Animated Logo */}
           <div className="flex justify-center">
-            <div
-              className="w-28 h-28 rounded-[2.5rem] flex items-center justify-center shadow-2xl border-2 border-white/20 animate-bounce-gentle"
-              style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' }}
-            >
-              <ScanLine className="text-white" style={{ width: '3.5rem', height: '3.5rem' }} />
+            <div className="relative w-24 h-24 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-[2rem] gradient-primary opacity-70 blur-2xl" />
+              <div className="relative w-24 h-24 rounded-[2rem] bg-[#0b0b0e] border border-white/10 flex items-center justify-center animate-bounce-gentle">
+                <ScanLine className="text-white h-10 w-10" />
+              </div>
             </div>
           </div>
 
           {/* Branding */}
-          <div className="space-y-3">
-            <h1 className="text-5xl font-black text-white tracking-tight">
+          <div className="space-y-4">
+            <h1 className="at-display text-5xl font-bold text-white tracking-[-0.04em] leading-[0.95]">
               PRESENSI<br />
-              <span className="text-blue-200">FILKOM</span>
+              <span className="text-gradient">FILKOM</span>
             </h1>
             <div className="flex items-center justify-center gap-3">
-              <div className="h-px w-12 bg-white/20" />
-              <p className="text-blue-200/70 text-xs font-bold tracking-[0.3em] uppercase">Kuliah Umum & Chapel</p>
-              <div className="h-px w-12 bg-white/20" />
+              <div className="h-px w-12 bg-white/15" />
+              <p className="text-white/50 text-[10px] font-semibold tracking-[0.35em] uppercase">Kuliah Umum & Chapel</p>
+              <div className="h-px w-12 bg-white/15" />
             </div>
-            <p className="text-blue-300/50 text-xs tracking-[0.2em] uppercase font-medium">Universitas Klabat</p>
+            <p className="text-white/25 text-[10px] tracking-[0.3em] uppercase font-medium">Universitas Klabat</p>
           </div>
 
           {/* Scanner badge */}
-          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-blue-100/80 text-sm font-medium">Scanner Mode</span>
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.04] backdrop-blur-xl border border-white/[0.09]">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-white/55 text-[11px] font-semibold uppercase tracking-[0.2em]">Scanner Mode</span>
           </div>
 
           {/* Progress bar */}
           <div className="flex flex-col items-center gap-3">
-            <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-300/60 animate-progress-loading origin-left rounded-full" />
+            <div className="w-48 h-px bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full w-full gradient-primary animate-progress-loading origin-left rounded-full" />
             </div>
-            <p className="text-blue-300/40 text-[10px] font-bold tracking-[0.25em] uppercase">Menyiapkan scanner...</p>
+            <p className="text-white/25 text-[10px] font-semibold tracking-[0.25em] uppercase">Menyiapkan scanner...</p>
           </div>
         </div>
       </div>
@@ -358,18 +350,19 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
 
   if (initError || !meeting) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero px-4">
-        <div className="text-center text-white space-y-4 max-w-sm">
-          <div className="w-20 h-20 mx-auto bg-white/10 backdrop-blur-xl rounded-3xl flex items-center justify-center">
-            <XCircle className="h-10 w-10 text-red-400" />
+      <div className="tubes-canvas min-h-screen flex items-center justify-center px-4">
+        <div className="absolute inset-0 tubes-grain" />
+        <div className="relative z-10 text-center text-white space-y-4 max-w-sm">
+          <div className="w-20 h-20 mx-auto bg-white/[0.04] backdrop-blur-xl rounded-xl border border-white/[0.08] flex items-center justify-center">
+            <XCircle className="h-10 w-10 text-rose-400" />
           </div>
           <div className="space-y-2">
-            <p className="text-lg font-semibold">Halaman tidak ditemukan</p>
-            <p className="text-sm text-white/70">{initError ?? 'Token scanner tidak valid.'}</p>
+            <p className="at-title">Halaman tidak ditemukan</p>
+            <p className="text-sm text-white/50">{initError ?? 'Token scanner tidak valid.'}</p>
           </div>
           <Button
             variant="outline"
-            className="mt-4 text-white border-white/20 bg-white/10 backdrop-blur-xl hover:bg-white/20 rounded-xl"
+            className="mt-4 text-white border-white/[0.14] bg-white/[0.03] hover:bg-white/[0.07] rounded-lg"
             onClick={() => { setInitError(null); setLoadingInit(true); loadMeeting() }}
           >
             Coba Lagi
@@ -382,17 +375,18 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   // PIN Gate — show PIN form before scanner
   if (requiresPin && !pinVerified) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero px-4">
-        <div className="w-full max-w-xs space-y-6 text-center">
+      <div className="tubes-canvas min-h-screen flex items-center justify-center px-4">
+        <div className="absolute inset-0 tubes-grain" />
+        <div className="relative z-10 w-full max-w-xs space-y-6 text-center">
           <div className="space-y-3">
-            <div className="w-20 h-20 mx-auto bg-white/10 backdrop-blur-xl rounded-3xl flex items-center justify-center shadow-2xl">
+            <div className="w-20 h-20 mx-auto bg-white/[0.04] backdrop-blur-xl rounded-xl border border-white/[0.08] flex items-center justify-center">
               <Lock className="h-10 w-10 text-blue-300" />
             </div>
             <div className="space-y-1">
-              <h1 className="text-xl font-bold text-white">{meeting.nama_event}</h1>
-              <p className="text-sm text-white/70">{meeting.tanggal} · {meeting.start_time}</p>
+              <h1 className="at-title text-lg">{meeting.nama_event}</h1>
+              <p className="text-sm text-white/45">{meeting.tanggal} · {meeting.start_time}</p>
             </div>
-            <p className="text-sm text-white/80 bg-white/10 backdrop-blur-xl rounded-xl p-3">Masukkan PIN untuk mengakses scanner</p>
+            <p className="text-[13px] text-white/60 bg-white/[0.03] backdrop-blur-xl border border-white/[0.07] rounded-lg p-3">Masukkan PIN untuk mengakses scanner</p>
           </div>
           <form onSubmit={e => { e.preventDefault(); handleVerifyPin() }} className="space-y-4">
             <Input
@@ -402,19 +396,19 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
               placeholder="000000"
               value={pinInput}
               onChange={e => { setPinInput(e.target.value.replace(/\D/g, '').slice(0, 6)); setPinError(null) }}
-              className="bg-white/10 backdrop-blur-xl border-white/20 text-white text-center text-3xl tracking-[0.5em] h-16 rounded-2xl placeholder:text-white/30 placeholder:text-xl placeholder:tracking-normal focus:border-blue-400/50 focus:ring-blue-400/20"
+              className="bg-white/[0.03] border-white/[0.09] text-white text-center text-3xl tracking-[0.5em] h-16 rounded-lg placeholder:text-white/15 placeholder:text-xl placeholder:tracking-normal focus:border-ring focus:ring-ring/30"
               autoComplete="off"
               autoFocus
             />
             {pinError && (
-              <div className="p-3 rounded-xl bg-red-500/20 backdrop-blur-xl border border-red-500/30">
-                <p className="text-sm text-red-300">{pinError}</p>
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-400/25">
+                <p className="text-sm text-rose-300">{pinError}</p>
               </div>
             )}
             <Button
               type="submit"
               disabled={verifyingPin || pinInput.length < 6}
-              className="w-full h-12 bg-white text-blue-600 hover:bg-white/90 font-semibold rounded-xl shadow-xl transition-all duration-300"
+              className="w-full h-12 text-[11px] font-semibold uppercase tracking-[0.18em] text-white rounded-lg overflow-hidden relative animate-sweep"
             >
               {verifyingPin ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : 'Verifikasi PIN'}
             </Button>
@@ -427,48 +421,45 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
   const isActive = meeting.status === 'AKTIF'
 
   return (
-    <div className="min-h-screen text-white flex flex-col relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0c1a5e 0%, #1a3590 50%, #1e50c8 100%)' }}>
-      {/* Decorative background — matches login & loading screens */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-      <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full opacity-15 blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle, #60a5fa, transparent)' }} />
-      <div className="absolute bottom-[-100px] left-[-100px] w-[400px] h-[400px] rounded-full opacity-10 blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle, #93c5fd, transparent)' }} />
+    <div className="tubes-canvas min-h-screen text-white flex flex-col relative overflow-hidden">
+      <div className="absolute inset-0 tubes-grain pointer-events-none" />
 
       {/* Header */}
-      <div className="relative z-10 px-4 pt-6 pb-4 border-b border-white/10 backdrop-blur-xl bg-white/5">
+      <div className="relative z-10 px-4 pt-6 pb-4 border-b border-white/[0.07] backdrop-blur-xl bg-white/[0.02]">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <h1 className="text-lg font-bold text-white">{meeting.nama_event}</h1>
-              <p className="text-xs text-white/60">{meeting.tanggal} · {meeting.start_time}{meeting.end_time ? `–${meeting.end_time}` : ''}</p>
+              <h1 className="at-title text-base">{meeting.nama_event}</h1>
+              <p className="text-[11px] text-white/40">{meeting.tanggal} · {meeting.start_time}{meeting.end_time ? `–${meeting.end_time}` : ''}</p>
             </div>
             <Badge className={`${
-              meeting.status === 'AKTIF' ? 'bg-green-500 text-white' : 
-              meeting.status === 'DRAFT' ? 'bg-gray-500 text-white' : 
-              'bg-red-500 text-white'
-            } rounded-full px-3 py-1 text-xs font-semibold shadow-lg`}>
+              meeting.status === 'AKTIF' ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/25' : 
+              meeting.status === 'DRAFT' ? 'bg-white/[0.06] text-white/60 border border-white/[0.09]' : 
+              'bg-rose-500/15 text-rose-300 border border-rose-400/25'
+            } rounded-full px-3 py-1`}>
               {meeting.status}
             </Badge>
           </div>
           <div className="flex gap-2 mt-3">
-            <div className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-green-500/20 backdrop-blur-xl border border-green-500/30">
-              <CheckCircle2 className="h-4 w-4 text-green-400" />
+            <div className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg bg-emerald-500/[0.07] border border-emerald-400/15">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
               <div className="text-center">
-                <p className="text-lg font-bold text-green-400">{counts.hadir}</p>
-                <p className="text-xs text-green-300/80">Hadir</p>
+                <p className="text-lg font-bold text-emerald-300">{counts.hadir}</p>
+                <p className="text-[10px] text-emerald-400/60 uppercase tracking-[0.15em]">Hadir</p>
               </div>
             </div>
-            <div className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-yellow-500/20 backdrop-blur-xl border border-yellow-500/30">
-              <Clock className="h-4 w-4 text-yellow-400" />
+            <div className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg bg-amber-500/[0.07] border border-amber-400/15">
+              <Clock className="h-4 w-4 text-amber-400" />
               <div className="text-center">
-                <p className="text-lg font-bold text-yellow-400">{counts.late}</p>
-                <p className="text-xs text-yellow-300/80">Late</p>
+                <p className="text-lg font-bold text-amber-300">{counts.late}</p>
+                <p className="text-[10px] text-amber-400/60 uppercase tracking-[0.15em]">Late</p>
               </div>
             </div>
-            <div className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20">
+            <div className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg bg-white/[0.04] border border-white/[0.09]">
               <Users className="h-4 w-4 text-white/70" />
               <div className="text-center">
-                <p className="text-lg font-bold text-white">{counts.hadir + counts.late}</p>
-                <p className="text-xs text-white/60">Total</p>
+                <p className="text-lg font-bold text-white/85">{counts.hadir + counts.late}</p>
+                <p className="text-[10px] text-white/35 uppercase tracking-[0.15em]">Total</p>
               </div>
             </div>
           </div>
@@ -478,10 +469,10 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
       <div className="relative z-10 flex-1 px-4 py-4 max-w-md mx-auto w-full space-y-4">
         {/* Feedback Banner */}
         {feedback && (
-          <div className={`flex items-center gap-3 rounded-2xl p-4 text-sm font-medium animate-in slide-in-from-top-2 shadow-xl backdrop-blur-xl border ${
-            feedback.type === 'success' ? 'bg-green-500/30 border-green-500/40 text-green-100' :
-            feedback.type === 'warning' ? 'bg-yellow-500/30 border-yellow-500/40 text-yellow-100' :
-            'bg-red-500/30 border-red-500/40 text-red-100'
+          <div className={`flex items-center gap-3 rounded-xl p-4 text-sm font-medium animate-in slide-in-from-top-2 backdrop-blur-xl border ${
+            feedback.type === 'success' ? 'bg-emerald-500/12 border-emerald-400/30 text-emerald-200' :
+            feedback.type === 'warning' ? 'bg-amber-500/12 border-amber-400/30 text-amber-200' :
+            'bg-rose-500/12 border-rose-400/30 text-rose-200'
           }`}>
             {feedback.type === 'success' ? <CheckCircle2 className="h-5 w-5 shrink-0" /> :
              feedback.type === 'warning' ? <AlertCircle className="h-5 w-5 shrink-0" /> :
@@ -492,37 +483,37 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
 
         {/* Scanner Form */}
         {!isActive ? (
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 text-center space-y-3 border border-white/10">
-            <div className="w-16 h-16 mx-auto bg-white/10 rounded-2xl flex items-center justify-center">
+          <div className="bg-white/[0.03] backdrop-blur-xl rounded-xl p-8 text-center space-y-3 border border-white/[0.07]">
+            <div className="w-16 h-16 mx-auto bg-white/[0.05] rounded-xl border border-white/[0.07] flex items-center justify-center">
               <Clock className="h-8 w-8 text-white/50" />
             </div>
             <div className="space-y-1">
               <p className="text-white/80 text-sm font-medium">Event belum aktif atau sudah ditutup</p>
               <Badge className={`${
-                meeting.status === 'AKTIF' ? 'bg-green-500' : 
-                meeting.status === 'DRAFT' ? 'bg-gray-500' : 
-                'bg-red-500'
+                meeting.status === 'AKTIF' ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/25' : 
+                meeting.status === 'DRAFT' ? 'bg-white/[0.06] text-white/60 border border-white/[0.09]' : 
+                'bg-rose-500/15 text-rose-300 border border-rose-400/25'
               } rounded-full text-xs`}>
                 Status: {meeting.status}
               </Badge>
             </div>
           </div>
         ) : (
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-4 space-y-4 border border-white/10">
+          <div className="bg-white/[0.03] backdrop-blur-xl rounded-xl p-4 space-y-4 border border-white/[0.07]">
             {/* Camera region */}
             <div className={cameraActive ? 'block' : 'hidden'}>
-              <div id={cameraRegionId} className="w-full rounded-2xl overflow-hidden border border-white/10" />
+              <div id={cameraRegionId} className="w-full rounded-xl overflow-hidden border border-white/[0.07]" />
               <p className="text-xs text-white/50 text-center mt-2">Arahkan kamera ke barcode / QR kartu mahasiswa</p>
             </div>
 
             {cameraError && (
-              <div className="p-3 rounded-xl bg-red-500/20 backdrop-blur-xl border border-red-500/30">
-                <p className="text-xs text-red-300 text-center">{cameraError}</p>
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-400/25">
+                <p className="text-xs text-rose-300 text-center">{cameraError}</p>
               </div>
             )}
 
             <form onSubmit={e => { e.preventDefault(); const v = noReg.trim(); if (v) { setNoReg(''); submitNim(v) } }} className="space-y-4">
-              <div className="flex items-center gap-2 text-xs text-white/60">
+              <div className="flex items-center gap-2 text-[10px] text-white/35 uppercase tracking-[0.18em]">
                 <ScanLine className="h-4 w-4" />
                 <span>Scan atau ketik No. Registrasi</span>
               </div>
@@ -532,7 +523,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
                   value={noReg}
                   onChange={e => setNoReg(e.target.value)}
                   placeholder="No. Registrasi / scan barcode"
-                  className="bg-white/10 backdrop-blur-xl border-white/20 text-white placeholder:text-white/40 text-base h-12 flex-1 rounded-xl focus:border-blue-400/50 focus:ring-blue-400/20"
+                  className="bg-white/[0.04] border-white/[0.09] text-white placeholder:text-white/20 text-base h-12 flex-1 rounded-lg focus:border-ring focus:ring-ring/30"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -544,7 +535,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
                   variant="outline"
                   className={`h-12 w-12 shrink-0 rounded-xl border-white/20 backdrop-blur-xl transition-all duration-300 ${
                     cameraActive 
-                      ? 'bg-blue-500 border-blue-400 text-white shadow-lg shadow-blue-500/30' 
+                      ? 'bg-blue-500/15 border-blue-400 text-white shadow-lg shadow-blue-500/30' 
                       : 'bg-white/10 text-white/70 hover:bg-white/20'
                   }`}
                   title={cameraActive ? 'Matikan kamera' : 'Nyalakan kamera'}
@@ -553,16 +544,16 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
                   {cameraActive ? <CameraOff className="h-5 w-5" /> : <Camera className="h-5 w-5" />}
                 </Button>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03] border border-white/[0.07]">
                 <div className="flex items-center gap-3">
                   <Switch 
                     id="late-toggle" 
                     checked={isLate} 
                     onCheckedChange={setIsLate}
-                    className="data-[state=checked]:bg-yellow-500"
+                    className="data-[state=checked]:bg-amber-500"
                   />
                   <Label htmlFor="late-toggle" className={`text-sm font-medium cursor-pointer transition-colors ${
-                    isLate ? 'text-yellow-400' : 'text-white/60'
+                    isLate ? 'text-amber-400' : 'text-white/60'
                   }`}>
                     {isLate ? (
                       <span className="flex items-center gap-2">
@@ -579,7 +570,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
                   <Button 
                     type="button" 
                     variant="ghost" 
-                    className="text-white/60 hover:text-white hover:bg-white/10 h-9 px-3 rounded-xl" 
+                    className="text-white/50 hover:text-white hover:bg-white/[0.07] h-9 px-3 rounded-lg" 
                     onClick={() => { setNoReg(''); inputRef.current?.focus() }}
                   >
                     Clear
@@ -587,7 +578,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
                   <Button 
                     type="submit" 
                     disabled={submitting || !noReg.trim()} 
-                    className="h-9 bg-blue-500 hover:bg-blue-600 px-4 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all duration-300"
+                    className="h-9 px-5 rounded-lg text-[10px] font-semibold uppercase tracking-[0.16em] text-white overflow-hidden relative animate-sweep"
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Scan'}
                   </Button>
@@ -604,7 +595,7 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
             <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">Terakhir Scan ({recentScans.length})</p>
           </div>
           {recentScans.length === 0 ? (
-            <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 text-center">
+            <div className="p-6 rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.07] text-center">
               <ScanLine className="h-8 w-8 mx-auto text-white/20 mb-2" />
               <p className="text-sm text-white/40">Belum ada scan</p>
             </div>
@@ -613,23 +604,23 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
               key={scan.id} 
               className={`flex items-center justify-between rounded-xl px-3 py-2.5 backdrop-blur-xl border transition-all duration-300 ${
                 i === 0 
-                  ? 'bg-white/10 border-white/20 shadow-lg scale-[1.02]' 
-                  : 'bg-white/5 border-white/10 hover:bg-white/8'
+                  ? 'bg-white/[0.06] border-white/[0.13] scale-[1.02]'
+                  : 'bg-white/[0.02] border-white/[0.07]'
               }`}
             >
               <div className="flex-1 min-w-0">
                 {scan.student ? (
                   <>
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-[13px] font-medium truncate">
                       {scan.student.last_name}, {scan.student.first_name}
                       {scan.student_status === 'MAGANG' && (
-                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-300 text-[10px] font-bold uppercase tracking-wider">🏢 Magang</span>
+                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/25 text-orange-300 text-[10px] font-bold uppercase tracking-wider">🏢 Magang</span>
                       )}
                     </p>
-                    <p className="text-xs text-white/50 mt-0.5">
+                    <p className="text-[11px] text-white/40 mt-0.5">
                       {scan.student.no_regis}
                       {(scan.section_title || scan.seat_label) && (
-                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-mono">
+                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-400/25 text-blue-300 text-xs font-mono">
                           {scan.section_title ? `📍 ${scan.section_title}` : ''}
                           {scan.section_title && scan.seat_label ? ' · ' : ''}
                           {scan.seat_label ? `🪑 ${scan.seat_label}` : ''}
@@ -642,12 +633,12 @@ export default function ScannerPage({ params }: { params: Promise<{ token: strin
               <div className="text-right flex items-center gap-2 ml-3">
                 <Badge className={`text-xs font-semibold rounded-full px-2.5 py-1 shadow-lg ${
                   scan.status === 'HADIR' 
-                    ? 'bg-green-500 text-white shadow-green-500/30' 
-                    : 'bg-yellow-500 text-white shadow-yellow-500/30'
+                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/25'
+                    : 'bg-amber-500/15 text-amber-300 border border-amber-400/25'
                 }`}>
                   {scan.status}
                 </Badge>
-                <p className="text-xs text-white/50 font-mono">
+                <p className="text-[11px] text-white/35 font-mono">
                   {new Date(scan.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </p>
               </div>

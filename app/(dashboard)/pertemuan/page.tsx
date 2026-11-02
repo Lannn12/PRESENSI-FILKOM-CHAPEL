@@ -161,7 +161,7 @@ export default function PertemuanPage() {
   if (!activeSemester) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Pertemuan / Events</h1>
+        <h1 className="at-display text-3xl font-bold tracking-[-0.03em] text-white">Pertemuan <span className="text-white/25">/</span> Events</h1>
         <Card><CardContent className="py-10 text-center text-muted-foreground">Tidak ada semester aktif.</CardContent></Card>
       </div>
     )
@@ -171,11 +171,11 @@ export default function PertemuanPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Pertemuan / Events</h1>
-          <p className="text-sm text-muted-foreground">Kelola event kuliah umum dan link scanner</p>
+          <h1 className="at-display text-3xl font-bold tracking-[-0.03em] text-white">Pertemuan <span className="text-white/25">/</span> Events</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">Kelola event kuliah umum dan link scanner</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center space-x-2 bg-muted/50 px-3 py-1.5 rounded-xl border border-border/50">
+          <div className="flex items-center space-x-2 bg-white/[0.02] px-3 py-1.5 rounded-xl border border-white/[0.09]">
             <Switch id="archived-toggle" checked={showArchived} onCheckedChange={setShowArchived} />
             <Label htmlFor="archived-toggle" className="text-xs font-bold text-muted-foreground cursor-pointer">
               Lihat Arsip
@@ -185,13 +185,13 @@ export default function PertemuanPage() {
         </div>
       </div>
 
-      <Card className="border-none shadow-card bg-card/50 backdrop-blur-sm overflow-hidden">
+      <Card className="border-none shadow-card bg-white/[0.02] backdrop-blur-sm overflow-hidden">
         <CardContent className="p-0">
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : filteredMeetings.length === 0 ? (
             <div className="text-center text-muted-foreground py-16">
-              <div className="w-16 h-16 bg-muted/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-white/[0.02] rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Archive className="h-8 w-8 opacity-20" />
               </div>
               <p className="font-medium">{showArchived ? 'Tidak ada event di arsip' : 'Belum ada event aktif'}</p>
@@ -200,7 +200,7 @@ export default function PertemuanPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/30 hover:bg-muted/30 border-none">
+                  <TableRow className="bg-white/[0.02] hover:bg-white/[0.02] border-none">
                     <TableHead className="text-[10px] font-bold uppercase tracking-widest h-11">Event</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase tracking-widest h-11">Tipe</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase tracking-widest h-11">Tanggal</TableHead>
@@ -215,7 +215,7 @@ export default function PertemuanPage() {
                     <TableRow key={m.id} className="hover:bg-muted/20 border-muted/30 transition-colors">
                       <TableCell className="font-bold tracking-tight py-4">{m.nama_event}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-background/50">{EVENT_TYPE_LABELS[m.event_type]}</Badge>
+                        <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-white/[0.02]">{EVENT_TYPE_LABELS[m.event_type]}</Badge>
                       </TableCell>
                       <TableCell className="text-sm py-4">
                         <p className="font-semibold">{m.tanggal}</p>
@@ -237,14 +237,14 @@ export default function PertemuanPage() {
                       {!showArchived && (
                         <TableCell>
                           <div className="flex gap-1 items-center justify-center">
-                            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-none bg-background/50 shadow-sm hover:scale-105" title="Salin link" onClick={() => copyLink(m.scanner_token)}>
+                            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-none bg-white/[0.02] shadow-sm hover:scale-105" title="Salin link" onClick={() => copyLink(m.scanner_token)}>
                               <Link2 className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-none bg-background/50 shadow-sm hover:scale-105" title="QR Code" onClick={() => setQrMeeting(m)}>
+                            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-none bg-white/[0.02] shadow-sm hover:scale-105" title="QR Code" onClick={() => setQrMeeting(m)}>
                               <QrCode className="h-3.5 w-3.5" />
                             </Button>
                             {m.status === 'AKTIF' && m.scanner_pin && (
-                              <Badge variant="secondary" className="h-8 px-2 bg-blue-500/10 text-blue-600 border-none font-bold text-[10px] gap-1 shadow-sm">
+                              <Badge variant="secondary" className="h-8 px-2 bg-blue-500/10 text-blue-300 border-none font-bold text-[10px] gap-1 shadow-sm">
                                 <KeyRound className="h-3 w-3" /> PIN Aktif
                               </Badge>
                             )}
@@ -257,7 +257,7 @@ export default function PertemuanPage() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="h-8 w-8 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg" 
+                              className="h-8 w-8 text-violet-400 hover:text-violet-300 hover:bg-violet-500/10 rounded-lg"
                               title="Arsipkan" 
                               onClick={() => handleStatusChange(m.id, 'ARCHIVED')}
                             >
@@ -268,17 +268,17 @@ export default function PertemuanPage() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg" 
+                              className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg"
                               title="Buka dari arsip" 
                               onClick={() => handleStatusChange(m.id, 'DITUTUP')}
                             >
                               <ArchiveRestore className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg" title="Monitor presensi" onClick={() => window.open(`/presensi/${m.id}`, '_blank')}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg" title="Monitor presensi" onClick={() => window.open(`/presensi/${m.id}`, '_blank')}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg" title="Hapus permanen" onClick={() => setDeleteId(m.id)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg" title="Hapus permanen" onClick={() => setDeleteId(m.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -358,14 +358,14 @@ export default function PertemuanPage() {
               <div className="flex justify-center">
                 <QRCode value={getScannerUrl(qrMeeting.scanner_token)} size={220} level="M" includeMargin />
               </div>
-              <div className="bg-muted rounded p-2 text-xs font-mono break-all text-left">
+              <div className="bg-white/[0.03] rounded p-2 text-xs font-mono break-all text-left">
                 {typeof window !== 'undefined' ? getScannerUrl(qrMeeting.scanner_token) : `/scan/${qrMeeting.scanner_token}`}
               </div>
               {qrMeeting.scanner_pin && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
-                  <p className="text-xs text-blue-600 font-medium">PIN Absenter</p>
-                  <p className="text-sm text-blue-800">PIN ditampilkan saat event diaktifkan (via notifikasi).</p>
-                  <p className="text-xs text-blue-500">Untuk mendapatkan PIN baru, ubah status ke Draft lalu aktifkan kembali.</p>
+                <div className="bg-blue-500/[0.05] border border-white/[0.09] rounded-lg p-3 space-y-1">
+                  <p className="text-xs text-blue-300 font-medium">PIN Absenter</p>
+                  <p className="text-sm text-blue-200">PIN ditampilkan saat event diaktifkan (via notifikasi).</p>
+                  <p className="text-xs text-blue-400">Untuk mendapatkan PIN baru, ubah status ke Draft lalu aktifkan kembali.</p>
                 </div>
               )}
               <div className="flex gap-2 justify-center">
@@ -387,7 +387,7 @@ export default function PertemuanPage() {
           <DialogHeader><DialogTitle>Hapus Event?</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
             Seluruh data presensi (HADIR, LATE, TIDAK_HADIR) yang sudah tercatat untuk event ini akan
-            <strong className="text-red-600"> ikut terhapus permanen</strong>. Tindakan ini tidak dapat dibatalkan.
+            <strong className="text-rose-300"> ikut terhapus permanen</strong>. Tindakan ini tidak dapat dibatalkan.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>Batal</Button>
@@ -401,7 +401,7 @@ export default function PertemuanPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-red-500" />
+              <Lock className="h-4 w-4 text-rose-400" />
               Tutup Event?
             </DialogTitle>
           </DialogHeader>

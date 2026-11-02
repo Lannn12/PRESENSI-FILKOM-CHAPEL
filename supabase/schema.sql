@@ -96,7 +96,7 @@ create table public.meetings (
   deskripsi text,
   scanner_token varchar not null unique default gen_random_uuid()::text,
   scanner_pin varchar,     -- PIN for absenter authentication (6-digit or hashed)
-  status varchar(10) not null default 'DRAFT' check (status in ('DRAFT', 'AKTIF', 'DITUTUP')),
+  status varchar(10) not null default 'DRAFT' check (status in ('DRAFT', 'AKTIF', 'DITUTUP', 'ARCHIVED')),
   created_at timestamptz not null default now()
 );
 

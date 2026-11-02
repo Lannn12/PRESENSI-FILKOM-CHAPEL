@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { closeMeeting } from '@/lib/meetings'
+import { closeMeeting, getMeetingDateTime } from '@/lib/meetings'
 
 /**
  * CRON JOB: Auto-close meetings that have passed their end_time.
  * Can be triggered via Vercel Cron, GitHub Actions, or Supabase Edge Functions.
+ *
+ * Jadwal Vercel Cron ada di `vercel.json`.
  */
 export async function GET(req: NextRequest) {
-  // 1. Basic security check
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // 1. Auth check.
+  //    CRON_SECRET wajib ada di production. Kalau tidak di-set, jangan sampai
+  //    header `Bearer undefined` dianggap valid — itu membuat endpoint terbuka.
+  const secret = process.env.CRON_SECRET
+  if (process.env.NODE_ENV === 'production') {
+    if (!secret) {
+      console.error('[CRON auto-close] CRON_SECRET tidak di-set — menolak semua request.')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (req.headers.get('authorization') !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
   }
 
   try {
@@ -34,9 +44,10 @@ export async function GET(req: NextRequest) {
     for (const meeting of activeMeetings) {
       if (!meeting.end_time) continue
 
-      const [hours, minutes, seconds] = meeting.end_time.split(':').map(Number)
-      const meetingEnd = new Date(meeting.tanggal)
-      meetingEnd.setHours(hours, minutes, seconds || 0)
+      // Gunakan helper yang sama dengan /api/scan agar keduanya tidak
+      // berbeda opinions soal timezone.
+      const meetingEnd = getMeetingDateTime(meeting.tanggal, meeting.end_time)
+      if (!meetingEnd) continue
 
       if (now > meetingEnd) {
         try {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { rateLimit } from '@/lib/rate-limit'
 import { getSeatLabel } from '@/lib/seat-utils'
+import { closeMeeting, getMeetingDateTime } from '@/lib/meetings'
 
 // Gunakan createClient langsung (bukan SSR) agar bypass RLS tanpa masalah cookies
 function getServiceSupabase() {
@@ -49,23 +50,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Event berstatus ${meeting.status}. Presensi tidak dapat direkam.` }, { status: 403 })
     }
 
-    // NEW: Time-based auto-close — jika end_time sudah lewat, tutup meeting sekarang
+    // Time-based auto-close — jika end_time sudah lewat, tutup meeting sekarang
     if (meeting.end_time) {
-      const now = new Date()
-      const [hours, minutes, seconds] = meeting.end_time.split(':').map(Number)
-      // Gunakan tanggal meeting + jam dalam UTC untuk konsistensi dengan server Vercel
-      const meetingEnd = new Date(`${meeting.tanggal}T${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds||0).padStart(2,'0')}+07:00`)
+      const meetingEnd = getMeetingDateTime(meeting.tanggal, meeting.end_time)
 
-      if (now > meetingEnd) {
-        // Benar-benar tutup meeting dan generate TIDAK_HADIR (fire-and-forget, non-blocking)
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`
-        fetch(`${baseUrl}/api/meetings/${meeting.id}/close`, {
-          method: 'POST',
-          headers: { 'Cookie': req.headers.get('cookie') ?? '' },
-        }).catch(() => {/* fire and forget */})
+      if (meetingEnd && new Date() > meetingEnd) {
+        // Tutup event secara langsung lewat service-role.
+        //
+        // Sebelumnya route ini memanggil HTTP internal ke
+        // /api/meetings/[id]/close, tetapi endpoint itu mewajibkan sesi admin.
+        // Scanner dipakai mahasiswa yang belum login, sehingga request-nya
+        // selalu 401 dan event TIDAK PERNAH tertutup otomatis.
+        try {
+          await closeMeeting(meeting.id)
+        } catch (err) {
+          console.error('[API /api/scan POST] auto-close gagal:', err)
+        }
 
         return NextResponse.json({
-          error: 'Waktu presensi untuk event ini telah berakhir. Event sedang ditutup otomatis.',
+          error: 'Waktu presensi untuk event ini telah berakhir. Event sudah ditutup otomatis.',
           auto_close_triggered: true,
         }, { status: 403 })
       }

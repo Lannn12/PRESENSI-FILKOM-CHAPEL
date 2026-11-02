@@ -104,17 +104,18 @@ export const STATUS_LABELS: Record<AttendanceStatus, string> = {
   TIDAK_HADIR: 'Tidak Hadir',
 }
 
+// Palet Active Theory — canvas gelap, warna status gelap + teks terang
 export const STATUS_COLORS: Record<AttendanceStatus, string> = {
-  HADIR: 'bg-green-100 text-green-800',
-  LATE: 'bg-yellow-100 text-yellow-800',
-  TIDAK_HADIR: 'bg-red-100 text-red-800',
+  HADIR: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/25',
+  LATE: 'bg-amber-500/15 text-amber-300 border-amber-400/25',
+  TIDAK_HADIR: 'bg-rose-500/15 text-rose-300 border-rose-400/25',
 }
 
 export const EVENT_STATUS_COLORS: Record<EventStatus, string> = {
-  DRAFT: 'bg-gray-100 text-gray-700',
-  AKTIF: 'bg-green-100 text-green-800',
-  DITUTUP: 'bg-blue-100 text-blue-800',
-  ARCHIVED: 'bg-purple-100 text-purple-800',
+  DRAFT: 'bg-white/[0.08] text-white/70 border-white/[0.12]',
+  AKTIF: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/25',
+  DITUTUP: 'bg-blue-500/15 text-blue-300 border-blue-400/25',
+  ARCHIVED: 'bg-violet-500/15 text-violet-300 border-violet-400/25',
 }
 
 export const STUDENT_STATUS_LABELS: Record<StudentStatus, string> = {
@@ -123,8 +124,8 @@ export const STUDENT_STATUS_LABELS: Record<StudentStatus, string> = {
 }
 
 export const STUDENT_STATUS_COLORS: Record<StudentStatus, string> = {
-  AKTIF: 'bg-green-100 text-green-800 border-green-500/30',
-  MAGANG: 'bg-orange-100 text-orange-800 border-orange-500/30',
+  AKTIF: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/25',
+  MAGANG: 'bg-orange-500/15 text-orange-300 border-orange-400/25',
 }
 
 // ── Student page shared types ─────────────────

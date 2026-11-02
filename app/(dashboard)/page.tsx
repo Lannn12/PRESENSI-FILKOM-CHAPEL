@@ -43,9 +43,9 @@ interface AbsentPivotRow extends StudentAbsentRow {
 }
 
 const STATUS_BG: Record<AttendanceStatus, string> = {
-  HADIR: 'bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30',
-  LATE: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30',
-  TIDAK_HADIR: 'bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30',
+  HADIR: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/25',
+  LATE: 'bg-amber-500/15 text-amber-300 border-amber-400/25',
+  TIDAK_HADIR: 'bg-rose-500/15 text-rose-300 border-rose-400/25',
 }
 
 const StatCard = ({ 
@@ -61,17 +61,17 @@ const StatCard = ({
   gradient: string
   subtitle?: string
 }) => (
-  <Card className="group relative overflow-hidden border-none shadow-card hover:shadow-float transition-all duration-500 bg-card/50 backdrop-blur-sm">
-    <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-10 blur-3xl transition-all duration-500 group-hover:scale-150 ${gradient}`} />
-    <CardContent className="p-6">
+  <Card className="group relative overflow-hidden border border-white/[0.07] shadow-card transition-all duration-500 hover:border-white/[0.14]">
+    <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-[0.13] blur-3xl transition-all duration-500 group-hover:scale-150 ${gradient}`} />
+    <CardContent className="p-6 relative">
       <div className="flex items-center justify-between">
-        <div className="space-y-1.5">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">{title}</p>
-          <p className="text-3xl font-extrabold tracking-tight text-gradient-primary">{value}</p>
-          {subtitle && <p className="text-xs text-muted-foreground/80 font-medium">{subtitle}</p>}
+        <div className="space-y-2">
+          <p className="at-label">{title}</p>
+          <p className="at-display text-3xl font-bold text-white">{value}</p>
+          {subtitle && <p className="text-xs text-muted-foreground font-medium">{subtitle}</p>}
         </div>
-        <div className={`w-14 h-14 rounded-2xl ${gradient} flex items-center justify-center shadow-lg shadow-indigo-500/20 transform transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110`}>
-          <Icon className="h-7 w-7 text-white" />
+        <div className={`w-11 h-11 rounded-lg ${gradient} flex items-center justify-center opacity-90 transition-transform duration-500 group-hover:scale-110`}>
+          <Icon className="h-5 w-5 text-white" />
         </div>
       </div>
     </CardContent>
@@ -157,7 +157,10 @@ export default function DashboardPage() {
   async function handleSearch() {
     if (!searchQuery.trim()) return
     setSearching(true)
-    const { data: student } = await supabase.from('students').select('no_regis, first_name, last_name, major').or(`no_regis.eq.${searchQuery.trim()},first_name.ilike.%${searchQuery.trim()}%,last_name.ilike.%${searchQuery.trim()}%`).limit(1).single()
+    // Escape karakter khusus filter PostgREST (`,` `(` `)` `.` `*`) supaya input
+    // pengguna tidak bisa menyuntik kondisi OR tambahan ke dalam query.
+    const q = searchQuery.trim().replace(/[,()*%_\\]/g, '\\$&')
+    const { data: student } = await supabase.from('students').select('no_regis, first_name, last_name, major').or(`no_regis.eq.${q},first_name.ilike.%${q}%,last_name.ilike.%${q}%`).limit(1).single()
     if (!student) { setSearchResult({ student: null, attendances: [] }); setSearching(false); return }
     const { data: attendances } = await supabase.from('attendances').select('*, meeting:meetings(*)').eq('student_id', (await supabase.from('students').select('id').eq('no_regis', student.no_regis).single()).data?.id ?? '').order('created_at', { ascending: false })
     setSearchResult({ student, attendances: (attendances ?? []) as any })
@@ -324,8 +327,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col gap-1.5">
-        <h1 className="text-4xl font-extrabold tracking-tight text-gradient-primary">Dashboard</h1>
-        <p className="text-muted-foreground text-sm font-medium">Selamat datang di sistem manajemen presensi Kuliah Umum FILKOM</p>
+        <h1 className="at-display text-4xl font-bold tracking-[-0.03em] text-white">Dashboard</h1>
+        <p className="text-muted-foreground text-sm font-medium">Manajemen presensi Kuliah Umum FILKOM</p>
       </div>
 
       {/* Summary Cards */}
@@ -348,34 +351,34 @@ export default function DashboardPage() {
           icon={TrendingUp}
           gradient="gradient-green"
         />
-        <Card className="group relative overflow-hidden border-none shadow-card hover:shadow-float transition-all duration-500 bg-card/50 backdrop-blur-sm">
-          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-10 blur-3xl transition-all duration-500 group-hover:scale-150 gradient-orange" />
-          <CardContent className="p-6">
+        <Card className="group relative overflow-hidden border border-white/[0.07] shadow-card transition-all duration-500 hover:border-white/[0.14]">
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-[0.13] blur-3xl transition-all duration-500 group-hover:scale-150 gradient-orange" />
+          <CardContent className="p-6 relative">
             <div className="space-y-4">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">Seating Preview</p>
+              <p className="at-label">Seating Preview</p>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 transition-colors hover:bg-blue-100/50">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03] border border-white/[0.07] transition-colors hover:bg-white/[0.05]">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl gradient-blue flex items-center justify-center shadow-sm">
+                    <div className="w-8 h-8 rounded-lg gradient-blue flex items-center justify-center">
                       <span className="text-white text-xs font-bold">♂</span>
                     </div>
-                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">Male</span>
+                    <span className="text-[13px] font-medium text-white/75">Male</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-bold text-blue-800 dark:text-blue-200">{seatingPreview.male.assigned}</span>
-                    <span className="text-xs text-blue-600/60 dark:text-blue-400/60 font-medium"> / {seatingPreview.male.capacity}</span>
+                    <span className="text-xl font-bold text-white">{seatingPreview.male.assigned}</span>
+                    <span className="text-xs text-white/30 font-medium"> / {seatingPreview.male.capacity}</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-pink-50/50 dark:bg-pink-950/20 border border-pink-100/50 dark:border-pink-900/30 transition-colors hover:bg-pink-100/50">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03] border border-white/[0.07] transition-colors hover:bg-white/[0.05]">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl gradient-purple flex items-center justify-center shadow-sm">
+                    <div className="w-8 h-8 rounded-lg gradient-purple flex items-center justify-center">
                       <span className="text-white text-xs font-bold">♀</span>
                     </div>
-                    <span className="text-sm font-semibold text-pink-700 dark:text-pink-300">Female</span>
+                    <span className="text-[13px] font-medium text-white/75">Female</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-bold text-pink-800 dark:text-pink-200">{seatingPreview.female.assigned}</span>
-                    <span className="text-xs text-pink-600/60 dark:text-pink-400/60 font-medium"> / {seatingPreview.female.capacity}</span>
+                    <span className="text-xl font-bold text-white">{seatingPreview.female.assigned}</span>
+                    <span className="text-xs text-white/30 font-medium"> / {seatingPreview.female.capacity}</span>
                   </div>
                 </div>
               </div>
@@ -385,14 +388,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Attendance Trend Chart */}
-      <Card className="border-none shadow-card bg-card/50 backdrop-blur-sm overflow-hidden">
+      <Card className="border border-white/[0.07] shadow-card overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between p-6 pb-2">
           <div>
-            <CardTitle className="text-lg font-bold tracking-tight">Attendance Trends</CardTitle>
-            <p className="text-sm text-muted-foreground font-medium mt-0.5">Analisis visual kehadiran per event</p>
+            <CardTitle className="at-title text-base">Attendance Trends</CardTitle>
+            <p className="text-xs text-muted-foreground font-medium mt-1.5">Analisis visual kehadiran per event</p>
           </div>
           <Select value={chartFilter} onValueChange={(v) => setChartFilter(v as any)}>
-            <SelectTrigger className="w-44 h-10 rounded-xl bg-background/50 border-none shadow-sm font-medium">
+            <SelectTrigger className="w-44 h-9 rounded-lg bg-white/[0.03] border-white/[0.09] shadow-none font-medium text-[13px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-none shadow-float">
@@ -471,15 +474,15 @@ export default function DashboardPage() {
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Search & Edit Attendance */}
-        <Card className="border-none shadow-card bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col">
+        <Card className="border border-white/[0.07] shadow-card overflow-hidden flex flex-col">
           <CardHeader className="p-6 pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-blue flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <div className="w-9 h-9 rounded-lg gradient-blue flex items-center justify-center">
                 <Search className="h-5 w-5 text-white" />
               </div>
               <div>
-                <CardTitle className="text-lg font-bold tracking-tight">Cari & Edit Kehadiran</CardTitle>
-                <p className="text-sm text-muted-foreground font-medium">Pencarian cepat status mahasiswa</p>
+                <CardTitle className="at-title text-base">Cari & Edit Kehadiran</CardTitle>
+                <p className="text-xs text-muted-foreground font-medium mt-1.5">Pencarian cepat status mahasiswa</p>
               </div>
             </div>
           </CardHeader>
@@ -492,29 +495,29 @@ export default function DashboardPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="h-12 pl-10 rounded-xl bg-background/50 border-none shadow-inner"
+                  className="h-11 pl-10 rounded-lg bg-white/[0.03] border-white/[0.09] shadow-none"
                 />
               </div>
-              <Button onClick={handleSearch} disabled={searching} className="h-12 px-6 rounded-xl gradient-blue shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <Button onClick={handleSearch} disabled={searching} className="h-11 px-6 rounded-lg gradient-blue text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-blue transition-all hover:scale-[1.02] active:scale-[0.98]">
                 {searching ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Cari'}
               </Button>
             </div>
             
             <div className="flex-1 min-h-[300px]">
               {searchResult && !searchResult.student && (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-red-50/30 dark:bg-red-950/10 rounded-3xl border border-red-100/50 dark:border-red-900/20">
-                  <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
-                    <UserCheck className="h-8 w-8 text-red-500 opacity-50" />
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-rose-500/[0.05] rounded-xl border border-rose-400/15">
+                  <div className="w-14 h-14 rounded-lg bg-rose-500/10 border border-rose-400/20 flex items-center justify-center mb-4">
+                    <UserCheck className="h-6 w-6 text-rose-400 opacity-60" />
                   </div>
-                  <p className="text-red-700 dark:text-red-400 font-bold">Mahasiswa tidak ditemukan</p>
-                  <p className="text-xs text-red-600/70 dark:text-red-500/70 mt-1">Cek kembali nomor registrasi atau ejaan nama</p>
+                  <p className="text-rose-300 font-semibold text-sm">Mahasiswa tidak ditemukan</p>
+                  <p className="text-xs text-rose-400/60 mt-1">Cek kembali nomor registrasi atau ejaan nama</p>
                 </div>
               )}
               
               {!searchResult && (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center text-muted-foreground opacity-50">
-                  <div className="w-16 h-16 rounded-3xl bg-muted/50 flex items-center justify-center mb-4">
-                    <Users className="h-8 w-8" />
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center text-muted-foreground opacity-60">
+                  <div className="w-14 h-14 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-4">
+                    <Users className="h-6 w-6" />
                   </div>
                   <p className="text-sm font-medium">Mulai dengan mencari nama atau No. Reg</p>
                 </div>
@@ -522,25 +525,25 @@ export default function DashboardPage() {
 
               {searchResult?.student && (
                 <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
-                  <div className="p-5 rounded-3xl bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10 border border-blue-200/20 dark:border-blue-800/20 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-24 h-24 gradient-blue opacity-5 blur-2xl group-hover:opacity-10 transition-opacity" />
+                  <div className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.07] relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 gradient-blue opacity-[0.07] blur-2xl transition-opacity" />
                     <div className="flex items-center gap-4 relative">
-                      <div className="w-14 h-14 rounded-2xl gradient-blue flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <span className="text-white font-extrabold text-xl">
+                      <div className="w-11 h-11 rounded-lg gradient-blue flex items-center justify-center">
+                        <span className="text-white font-bold text-base">
                           {searchResult.student.first_name[0]}{searchResult.student.last_name[0]}
                         </span>
                       </div>
                       <div className="flex-1">
-                        <p className="font-extrabold text-lg tracking-tight">{searchResult.student.last_name}, {searchResult.student.first_name}</p>
+                        <p className="font-semibold text-base tracking-tight text-white">{searchResult.student.last_name}, {searchResult.student.first_name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <Badge variant="secondary" className="bg-blue-100/50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-none font-bold text-[10px] tracking-wider uppercase">{searchResult.student.no_regis}</Badge>
+                          <Badge variant="secondary" className="bg-white/[0.05] text-white/60 border-white/[0.09] text-[10px]">{searchResult.student.no_regis}</Badge>
                           <span className="text-xs text-muted-foreground font-medium">·</span>
                           <span className="text-xs text-muted-foreground font-medium">{searchResult.student.major}</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-muted/50 overflow-hidden bg-background/30 backdrop-blur-sm">
+                  <div className="rounded-xl border border-white/[0.07] overflow-hidden bg-white/[0.015]">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-muted/30 hover:bg-muted/30 border-none">
@@ -582,33 +585,33 @@ export default function DashboardPage() {
         </Card>
 
         {/* Absent More Than */}
-        <Card className="border-none shadow-card bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col">
+        <Card className="border border-white/[0.07] shadow-card overflow-hidden flex flex-col">
           <CardHeader className="p-6 pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl gradient-red flex items-center justify-center shadow-lg shadow-red-500/20">
+                <div className="w-9 h-9 rounded-lg gradient-red flex items-center justify-center">
                   <XCircle className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-bold tracking-tight">Batas Ketidakhadiran</CardTitle>
-                  <p className="text-sm text-muted-foreground font-medium">Pantau mahasiswa yang sering absen</p>
+                  <CardTitle className="at-title text-base">Batas Ketidakhadiran</CardTitle>
+                  <p className="text-xs text-muted-foreground font-medium mt-1.5">Pantau mahasiswa yang sering absen</p>
                 </div>
               </div>
               {absentPivotRows.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger>
                     <Button variant="outline" size="sm" className="rounded-xl border-none bg-background/50 shadow-sm hover:scale-[1.02] active:scale-[0.98]">
-                      {exportingAbsent ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />}
+                      {exportingAbsent ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-400" />}
                       Export
                       <ChevronDown className="h-3 w-3 ml-2 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="rounded-xl border-none shadow-float min-w-[160px]">
                     <DropdownMenuItem onClick={() => handleExportAbsent('xlsx')} className="py-2.5 font-medium">
-                      <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />Excel (.xlsx)
+                      <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-400" />Excel (.xlsx)
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleExportAbsent('csv')} className="py-2.5 font-medium">
-                      <FileSpreadsheet className="h-4 w-4 mr-2 text-blue-600" />CSV (.csv)
+                      <FileSpreadsheet className="h-4 w-4 mr-2 text-blue-300" />CSV (.csv)
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -624,9 +627,9 @@ export default function DashboardPage() {
                 value={absentThreshold}
                 onChange={(e) => setAbsentThreshold(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAbsentFilter()}
-                className="h-12 rounded-xl bg-background/50 border-none shadow-inner"
+                className="h-11 rounded-lg bg-white/[0.03] border-white/[0.09] shadow-none"
               />
-              <Button onClick={handleAbsentFilter} disabled={loadingAbsent} className="h-12 px-6 rounded-xl gradient-red shadow-lg shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <Button onClick={handleAbsentFilter} disabled={loadingAbsent} className="h-11 px-6 rounded-lg gradient-red text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:scale-[1.02] active:scale-[0.98]">
                 {loadingAbsent ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Cari'}
               </Button>
             </div>
@@ -636,20 +639,20 @@ export default function DashboardPage() {
                 <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
                   <div className="flex items-center justify-between px-2">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                      Terdeteksi <span className="text-red-500">{absentPivotRows.length} Mahasiswa</span>
+                      Terdeteksi <span className="text-rose-400">{absentPivotRows.length} Mahasiswa</span>
                     </p>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                       {absentMeetings.length} Total Event
                     </p>
                   </div>
-                  <div className="overflow-hidden rounded-2xl border border-muted/50 bg-background/30 backdrop-blur-sm">
+                  <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.015]">
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/30 hover:bg-muted/30 border-none">
-                            <TableHead className="sticky left-0 bg-muted/30 z-20 text-[10px] font-extrabold uppercase tracking-widest h-10 w-28">No. Reg</TableHead>
-                            <TableHead className="sticky left-28 bg-muted/30 z-20 text-[10px] font-extrabold uppercase tracking-widest h-10 min-w-[180px]">Nama Mahasiswa</TableHead>
-                            <TableHead className="text-[10px] font-extrabold uppercase tracking-widest h-10 text-center bg-red-500/10 dark:bg-red-950/20 text-red-600 dark:text-red-400 min-w-[100px]">Total</TableHead>
+                            <TableHead className="sticky left-0 bg-[#0d0d11] z-20 text-[10px] font-semibold uppercase tracking-[0.14em] h-10 w-28">No. Reg</TableHead>
+                            <TableHead className="sticky left-28 bg-[#0d0d11] z-20 text-[10px] font-semibold uppercase tracking-[0.14em] h-10 min-w-[180px]">Nama Mahasiswa</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-[0.14em] h-10 text-center bg-rose-500/[0.07] text-rose-400 min-w-[100px]">Total</TableHead>
                             {absentMeetings.map(m => (
                               <TableHead key={m.id} className="px-3 text-center h-10 min-w-[100px]">
                                 <p className="text-[10px] font-bold truncate max-w-[80px] mx-auto" title={m.nama_event}>{m.nama_event}</p>
@@ -661,13 +664,13 @@ export default function DashboardPage() {
                         <TableBody>
                           {absentPivotRows.map(row => (
                             <TableRow key={row.student_id} className="hover:bg-muted/20 border-muted/30 group">
-                              <TableCell className="sticky left-0 bg-card/90 backdrop-blur-md z-10 text-xs font-bold font-mono py-4 group-hover:bg-muted/10">{row.no_regis}</TableCell>
-                              <TableCell className="sticky left-28 bg-card/90 backdrop-blur-md z-10 py-4 group-hover:bg-muted/10">
+                              <TableCell className="sticky left-0 bg-[#0d0d11] z-10 text-xs font-medium font-mono text-white/60 py-4">{row.no_regis}</TableCell>
+                              <TableCell className="sticky left-28 bg-[#0d0d11] z-10 py-4">
                                 <p className="text-sm font-bold tracking-tight">{row.last_name}, {row.first_name}</p>
                                 <p className="text-[10px] text-muted-foreground font-medium">{row.major}</p>
                               </TableCell>
-                              <TableCell className="text-center bg-red-500/5 dark:bg-red-950/5 py-4">
-                                <Badge className="bg-red-500 hover:bg-red-600 text-white border-none font-bold px-2 py-0.5 shadow-sm shadow-red-500/20">{row.absent_count}×</Badge>
+                              <TableCell className="text-center bg-rose-500/[0.03] py-4">
+                                <Badge className="bg-rose-500/15 text-rose-300 border border-rose-400/25 px-2 py-0.5">{row.absent_count}×</Badge>
                               </TableCell>
                               {absentMeetings.map(m => {
                                 const status = row.attendance[m.id]
@@ -678,9 +681,9 @@ export default function DashboardPage() {
                                     ) : (
                                       <div className={cn(
                                         "w-7 h-7 rounded-lg flex items-center justify-center mx-auto text-[11px] font-extrabold shadow-sm transition-transform hover:scale-110",
-                                        status === 'TIDAK_HADIR' ? "gradient-red text-white" : 
-                                        status === 'LATE' ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" : 
-                                        "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                                        status === 'TIDAK_HADIR' ? "bg-rose-500/15 text-rose-300 border border-rose-400/25" : 
+                                        status === 'LATE' ? "bg-amber-500/12 text-amber-300 border border-amber-400/20" : 
+                                        "bg-emerald-500/12 text-emerald-300 border border-emerald-400/20"
                                       )}>
                                         {status === 'TIDAK_HADIR' ? 'X' : status === 'LATE' ? 'L' : 'H'}
                                       </div>
@@ -695,28 +698,28 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-4 text-[10px] font-bold text-muted-foreground px-2 pt-2 uppercase tracking-widest opacity-80">
-                    <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-emerald-100 flex items-center justify-center text-emerald-700">H</span> HADIR</span>
-                    <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-amber-100 flex items-center justify-center text-amber-700">L</span> LATE</span>
-                    <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded gradient-red flex items-center justify-center text-white">X</span> TIDAK HADIR</span>
+                    <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-emerald-500/15 flex items-center justify-center text-emerald-300">H</span> HADIR</span>
+                    <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-amber-500/15 flex items-center justify-center text-amber-300">L</span> LATE</span>
+                    <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-rose-500/15 flex items-center justify-center text-rose-300">X</span> TIDAK HADIR</span>
                     <span className="flex items-center gap-1.5"><span className="w-4 h-4 text-center">—</span> TIDAK ADA DATA</span>
                   </div>
                 </div>
               )}
 
               {absentThreshold && absentPivotRows.length === 0 && !loadingAbsent && (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-emerald-50/30 dark:bg-emerald-950/10 rounded-3xl border border-emerald-100/50 dark:border-emerald-900/20">
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-                    <UserCheck className="h-8 w-8 text-emerald-500 opacity-50" />
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-emerald-500/[0.05] rounded-xl border border-emerald-400/15">
+                  <div className="w-14 h-14 rounded-lg bg-emerald-500/10 border border-emerald-400/20 flex items-center justify-center mb-4">
+                    <UserCheck className="h-6 w-6 text-emerald-400 opacity-60" />
                   </div>
-                  <p className="text-emerald-700 dark:text-emerald-400 font-bold">Semua Aman!</p>
-                  <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 mt-1">Tidak ada mahasiswa yang melebihi batas absen {absentThreshold}</p>
+                  <p className="text-emerald-300 font-semibold text-sm">Semua Aman!</p>
+                  <p className="text-xs text-emerald-400/60 mt-1">Tidak ada mahasiswa yang melebihi batas absen {absentThreshold}</p>
                 </div>
               )}
 
               {!absentPivotRows.length && !absentThreshold && (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center text-muted-foreground opacity-50">
-                  <div className="w-16 h-16 rounded-3xl bg-muted/50 flex items-center justify-center mb-4">
-                    <XCircle className="h-8 w-8" />
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center text-muted-foreground opacity-60">
+                  <div className="w-14 h-14 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-4">
+                    <XCircle className="h-6 w-6" />
                   </div>
                   <p className="text-sm font-medium">Cek mahasiswa bermasalah dengan batas absen</p>
                 </div>

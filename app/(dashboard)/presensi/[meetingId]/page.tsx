@@ -305,37 +305,37 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
   if (!meeting) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-2 text-muted-foreground">
-        <XCircle className="h-10 w-10 text-red-400" />
+        <XCircle className="h-10 w-10 text-rose-400" />
         <p>Event tidak ditemukan.</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white/[0.02]">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold">{meeting.nama_event}</h1>
+            <h1 className="at-title text-lg">{meeting.nama_event}</h1>
             <p className="text-sm text-muted-foreground">{meeting.tanggal} &middot; {meeting.start_time}{meeting.end_time ? `–${meeting.end_time}` : ''}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-            <Badge className={meeting.status === 'AKTIF' ? 'bg-green-600' : meeting.status === 'DRAFT' ? 'bg-gray-500' : 'bg-red-700'}>
+            <Badge className={meeting.status === 'AKTIF' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/25' : meeting.status === 'DRAFT' ? 'bg-white/[0.10] text-white/70 border border-white/15' : 'bg-rose-500/20 text-rose-300 border border-rose-400/25'}>
               {meeting.status}
             </Badge>
             {isClosed && (
               <DropdownMenu>
                 <DropdownMenuTrigger
                   disabled={exporting || attendances.length === 0}
-                  className="inline-flex h-7 items-center justify-center gap-1 rounded-md border border-border bg-background px-2.5 text-[0.8rem] font-medium shadow-xs hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                  className="inline-flex h-7 items-center justify-center gap-1 rounded-md border border-white/[0.09] bg-background px-2.5 text-[0.8rem] font-medium shadow-xs hover:bg-white/[0.03] disabled:pointer-events-none disabled:opacity-50"
                 >
                   {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                   Export
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => handleExport('xlsx')}>
-                    <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                    <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-300" />
                     Excel (.xlsx) — Hadir & Tidak Hadir
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExport('csv')}>
@@ -357,20 +357,20 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
         <div className={`grid gap-3 ${isClosed ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-4'}`}>
           <Card>
             <CardContent className="py-3 text-center">
-              <p className="text-3xl font-bold text-green-600">{hadir}</p>
+              <p className="text-3xl font-bold text-emerald-300">{hadir}</p>
               <p className="text-xs text-muted-foreground">HADIR</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="py-3 text-center">
-              <p className="text-3xl font-bold text-yellow-600">{late}</p>
+              <p className="text-3xl font-bold text-amber-300">{late}</p>
               <p className="text-xs text-muted-foreground">LATE</p>
             </CardContent>
           </Card>
           {isClosed && (
             <Card>
               <CardContent className="py-3 text-center">
-                <p className="text-3xl font-bold text-red-600">{tidakHadir}</p>
+                <p className="text-3xl font-bold text-rose-300">{tidakHadir}</p>
                 <p className="text-xs text-muted-foreground">TIDAK HADIR</p>
               </CardContent>
             </Card>
@@ -385,7 +385,7 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
           )}
           <Card>
             <CardContent className="py-3 text-center">
-              <p className="text-3xl font-bold text-blue-600">{hadir + late}</p>
+              <p className="text-3xl font-bold text-blue-300">{hadir + late}</p>
               <p className="text-xs text-muted-foreground">{totalEnrolled !== null ? `dari ${totalEnrolled}` : 'Total hadir'}</p>
             </CardContent>
           </Card>
@@ -393,10 +393,10 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
 
         {/* Realtime badge */}
         {meeting.status === 'AKTIF' && (
-          <div className="flex items-center gap-2 text-sm text-green-700">
+          <div className="flex items-center gap-2 text-sm text-emerald-300">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500/15 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
             </span>
             Live monitoring aktif
           </div>
@@ -435,7 +435,7 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
                     <Button
                       size="sm"
                       variant={listFilter === 'BELUM_SCAN' ? 'default' : 'outline'}
-                      className={`h-7 text-xs ${listFilter !== 'BELUM_SCAN' && belumScanRows.length > 0 ? 'border-orange-300 text-orange-600 hover:bg-orange-50' : ''}`}
+                      className={`h-7 text-xs ${listFilter !== 'BELUM_SCAN' && belumScanRows.length > 0 ? 'border-orange-400/40 text-orange-300 hover:bg-orange-500/10' : ''}`}
                       onClick={() => setListFilter('BELUM_SCAN')}
                     >
                       Belum Scan ({belumScanRows.length})
@@ -486,13 +486,13 @@ export default function PresensMonitorPage({ params }: { params: Promise<{ meeti
                     </TableHeader>
                     <TableBody>
                       {belumScanRows.map((s, i) => (
-                        <TableRow key={s.id} className="bg-orange-50/50">
+                        <TableRow key={s.id} className="bg-orange-500/[0.05]">
                           <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
                           <TableCell className="text-sm">{studentName(s)}</TableCell>
                           <TableCell className="text-xs font-mono">{s.no_regis}</TableCell>
                           <TableCell className="text-xs">{s.major}</TableCell>
                           <TableCell>
-                            <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">
+                            <Badge className="text-xs bg-orange-500/[0.07] text-orange-300 border-orange-400/25">
                               Belum Scan
                             </Badge>
                           </TableCell>

@@ -10,6 +10,13 @@ export async function GET(request: Request) {
   const studentName = searchParams.get('student_name') || ''
   const meetingName = searchParams.get('meeting_name') || ''
 
+  // Escape karakter khusus PostgREST filter (`,` `(` `)` `.` `*`) supaya input
+  // pengguna tidak bisa menyuntik kondisi OR tambahan ke dalam query.
+  const sanitize = (v: string) => v.replace(/[,()*%_\\]/g, '\\$&').slice(0, 100)
+
+  const safeStudentName = sanitize(studentName)
+  const safeMeetingName = sanitize(meetingName)
+
   const supabase = await createServiceClient()
 
   try {
@@ -17,7 +24,7 @@ export async function GET(request: Request) {
     const { data: meetings, error: meetingError } = await supabase
       .from('meetings')
       .select('id, nama_event, status, tanggal, start_time, end_time, event_type, semester_id')
-      .ilike('nama_event', `%${meetingName}%`)
+      .ilike('nama_event', `%${safeMeetingName}%`)
       .order('tanggal', { ascending: false })
 
     if (meetingError) throw meetingError
@@ -26,7 +33,7 @@ export async function GET(request: Request) {
     const { data: students, error: studentError } = await supabase
       .from('students')
       .select('id, no_regis, first_name, last_name, major, status')
-      .or(`last_name.ilike.%${studentName}%,first_name.ilike.%${studentName}%`)
+      .or(`last_name.ilike.%${safeStudentName}%,first_name.ilike.%${safeStudentName}%`)
 
     if (studentError) throw studentError
 

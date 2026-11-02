@@ -33,9 +33,9 @@ interface AttendanceLite {
 }
 
 const STATUS_BG: Record<AttendanceStatus, string> = {
-  HADIR: 'bg-green-100 text-green-800',
-  LATE: 'bg-yellow-100 text-yellow-800',
-  TIDAK_HADIR: 'bg-red-100 text-red-800',
+  HADIR: 'bg-emerald-500/[0.07] text-emerald-200',
+  LATE: 'bg-amber-500/[0.07] text-amber-200',
+  TIDAK_HADIR: 'bg-rose-500/[0.07] text-rose-200',
 }
 
 const PAGE_SIZE = 1000
@@ -203,10 +203,22 @@ export default function RekapPage() {
           nama: `${s.last_name}, ${s.first_name}`,
           major: s.major,
           student_status: s.status,
+          // Kolom summary dihitung setelah loop meetings di bawah
+          __hadir: '0',
+          __late: '0',
+          __tidak_hadir: '0',
         }
+        let hadir = 0, late = 0, tidak_hadir = 0
         for (const m of filteredMeetings) {
-          row[m.id] = attMap.get(`${s.id}__${m.id}`) ?? '—'
+          const val = attMap.get(`${s.id}__${m.id}`) ?? '—'
+          row[m.id] = val
+          if (val === 'HADIR') hadir++
+          else if (val === 'LATE') late++
+          else if (val === 'TIDAK_HADIR') tidak_hadir++
         }
+        row.__hadir = String(hadir)
+        row.__late = String(late)
+        row.__tidak_hadir = String(tidak_hadir)
         return row
       })
       setPivotRows(rows)
@@ -380,17 +392,33 @@ export default function RekapPage() {
 
   // Export helpers — selalu export pivotRows (semua data), bukan displayRows yang sudah difilter search
   function getExportData(sourceRows: PivotRow[] = pivotRows) {
-    const headers = ['No. Reg', 'Nama', 'Prodi', 'Status', ...meetings.map((m: Meeting) => `${m.nama_event} (${m.tanggal})`)]
-    const rows = sourceRows.map((r: PivotRow) => [
-      r.no_regis,
-      r.nama,
-      r.major,
-      STUDENT_STATUS_LABELS[r.student_status] ?? r.student_status,
-      ...meetings.map((m: Meeting) => {
-        const val = r[m.id]
-        return val === 'HADIR' ? 'H' : val === 'LATE' ? 'L' : val === 'TIDAK_HADIR' ? 'X' : ''
-      }),
-    ])
+    const headers = [
+      'No. Reg', 'Nama', 'Prodi', 'Status Mhs',
+      'H (Hadir)', 'L (Late)', 'X (Tidak Hadir)', 'Late → Absen (3L=1X)', 'Total Absen Efektif',
+      ...meetings.map((m: Meeting) => `${m.nama_event} (${m.tanggal})`),
+    ]
+    const rows = sourceRows.map((r: PivotRow) => {
+      const totalLate = Number(r.__late ?? 0)
+      const totalHadir = Number(r.__hadir ?? 0)
+      const totalTidakHadir = Number(r.__tidak_hadir ?? 0)
+      const lateAsAbsen = Math.floor(totalLate / 3)
+      const totalAbsenEfektif = totalTidakHadir + lateAsAbsen
+      return [
+        r.no_regis,
+        r.nama,
+        r.major,
+        STUDENT_STATUS_LABELS[r.student_status] ?? r.student_status,
+        totalHadir,
+        totalLate,
+        totalTidakHadir,
+        lateAsAbsen,
+        totalAbsenEfektif,
+        ...meetings.map((m: Meeting) => {
+          const val = r[m.id]
+          return val === 'HADIR' ? 'H' : val === 'LATE' ? 'L' : val === 'TIDAK_HADIR' ? 'X' : ''
+        }),
+      ]
+    })
     return { headers, rows }
   }
 
@@ -412,7 +440,7 @@ export default function RekapPage() {
 
       if (format === 'xlsx' || format === 'csv') {
         const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
-        ws['!cols'] = [{ wch: 14 }, { wch: 28 }, { wch: 20 }, { wch: 12 }, ...meetings.map(() => ({ wch: 14 }))]
+        ws['!cols'] = [{ wch: 14 }, { wch: 28 }, { wch: 20 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 18 }, { wch: 16 }, ...meetings.map(() => ({ wch: 14 }))]
         const wb = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi')
         XLSX.writeFile(wb, getFileName(format), { bookType: format })
@@ -432,7 +460,7 @@ export default function RekapPage() {
           styles: { fontSize: 6, cellPadding: 1.5 },
           headStyles: { fillColor: [59, 130, 246], fontSize: 6 },
           alternateRowStyles: { fillColor: [245, 247, 250] },
-          columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 25 }, 3: { cellWidth: 18 } },
+          columnStyles: { 0: { cellWidth: 18 }, 1: { cellWidth: 30 }, 2: { cellWidth: 22 }, 3: { cellWidth: 14 }, 4: { cellWidth: 10 }, 5: { cellWidth: 10 }, 6: { cellWidth: 12 }, 7: { cellWidth: 22 }, 8: { cellWidth: 18 } },
         })
         doc.save(getFileName('pdf'))
         toast.success(`File PDF berhasil diexport! (${rows.length} mahasiswa)`)
@@ -446,7 +474,7 @@ export default function RekapPage() {
   if (!activeSemester) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Rekap & Export</h1>
+        <h1 className="at-display text-3xl font-bold tracking-[-0.03em] text-white">Rekap <span className="text-white/25">&</span> Export</h1>
         <Card><CardContent className="py-10 text-center text-muted-foreground">Tidak ada semester aktif.</CardContent></Card>
       </div>
     )
@@ -456,12 +484,12 @@ export default function RekapPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Rekap & Export</h1>
+          <h1 className="at-display text-3xl font-bold tracking-[-0.03em] text-white">Rekap <span className="text-white/25">&</span> Export</h1>
           <p className="text-sm text-muted-foreground">
             Rekap otomatis terbarui setelah event ditutup (status Hadir / Late / Tidak Hadir).
           </p>
           {debugInfo && debugInfo.totalMeetings > debugInfo.filteredMeetings && (
-            <p className="text-xs text-orange-600 font-medium mt-1">
+            <p className="text-xs text-orange-400 font-medium mt-1">
               ⚠️ Menampilkan {debugInfo.filteredMeetings} dari {debugInfo.totalMeetings} event. Beberapa event tersembunyi karena filter status.
             </p>
           )}
@@ -561,11 +589,16 @@ export default function RekapPage() {
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="sticky left-0 bg-muted/50 px-3 py-2 text-left font-medium text-xs w-28">No. Reg</th>
-                    <th className="sticky left-28 bg-muted/50 px-3 py-2 text-left font-medium text-xs min-w-44">Nama</th>
+                  <tr className="border-b bg-white/[0.02]">
+                    <th className="sticky left-0 bg-white/[0.02] px-3 py-2 text-left font-medium text-xs w-28">No. Reg</th>
+                    <th className="sticky left-28 bg-white/[0.02] px-3 py-2 text-left font-medium text-xs min-w-44">Nama</th>
                     <th className="px-3 py-2 text-left font-medium text-xs min-w-32">Prodi</th>
                     <th className="px-3 py-2 text-center font-medium text-xs min-w-20">Status</th>
+                    {/* Kolom Ringkasan: H / L / X + konversi 3L=1X */}
+                    <th className="px-3 py-2 text-center font-medium text-xs min-w-36 border-r border-muted">
+                      <div>Ringkasan</div>
+                      <div className="text-[10px] font-normal text-muted-foreground">3 Late = 1 Absen</div>
+                    </th>
                     {meetings.map((m: Meeting) => {
                       // Hitung berapa "—" di kolom ini
                       const emptyCount = pivotRows.filter(r => r[m.id] === '—').length
@@ -573,13 +606,13 @@ export default function RekapPage() {
                         <th key={m.id} className="px-2 py-2 text-center font-medium text-xs min-w-24">
                           <div className="truncate max-w-24" title={m.nama_event}>{m.nama_event}</div>
                           <div className="text-muted-foreground font-normal">{m.tanggal}</div>
-                          {m.status === 'AKTIF' && <span className="inline-block mt-0.5 rounded-full bg-green-100 text-green-700 px-1.5 py-0 text-[10px] font-medium">Aktif</span>}
-                          {m.status === 'DITUTUP' && <span className="inline-block mt-0.5 rounded-full bg-blue-100 text-blue-700 px-1.5 py-0 text-[10px] font-medium">Ditutup</span>}
+                          {m.status === 'AKTIF' && <span className="inline-block mt-0.5 rounded-full bg-emerald-500/[0.07] text-emerald-300 px-1.5 py-0 text-[10px] font-medium">Aktif</span>}
+                          {m.status === 'DITUTUP' && <span className="inline-block mt-0.5 rounded-full bg-blue-500/10 text-blue-300 px-1.5 py-0 text-[10px] font-medium">Ditutup</span>}
                           {/* Tombol bulk mark per kolom event */}
                           {emptyCount > 0 && (
                             <button
                               onClick={() => setConfirmTarget({ type: 'meeting', id: m.id, label: m.nama_event })}
-                              className="mt-1 flex items-center gap-0.5 mx-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors"
+                              className="mt-1 flex items-center gap-0.5 mx-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-rose-500/[0.03] text-rose-300 hover:bg-rose-500/[0.07] border border-rose-400/25 transition-colors"
                               title={`Tandai ${emptyCount} yang kosong sebagai Tidak Hadir`}
                             >
                               <UserX className="h-2.5 w-2.5" />
@@ -594,18 +627,18 @@ export default function RekapPage() {
                 <tbody className="divide-y">
                   {displayRows.map((row: PivotRow) => (
                     <tr key={row.student_id} className="hover:bg-accent/50">
-                      <td className="sticky left-0 bg-white px-3 py-2 text-xs font-mono">{row.no_regis}</td>
-                      <td className="sticky left-28 bg-white px-3 py-2 text-xs">{row.nama}</td>
+                      <td className="sticky left-0 bg-white/[0.03] px-3 py-2 text-xs font-mono">{row.no_regis}</td>
+                      <td className="sticky left-28 bg-white/[0.03] px-3 py-2 text-xs">{row.nama}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground">{row.major}</td>
                       <td className="px-3 py-2 text-center">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0.5 ${row.student_status === 'MAGANG' ? 'bg-orange-100 text-orange-800 border-orange-500/30' : 'bg-green-100 text-green-800 border-green-500/30'}`}>
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0.5 ${row.student_status === 'MAGANG' ? 'bg-orange-500/[0.07] text-orange-200 border-orange-500/30' : 'bg-emerald-500/[0.07] text-emerald-200 border-emerald-400/25'}`}>
                           {row.student_status === 'MAGANG' ? '🏢 Magang' : 'Aktif'}
                         </Badge>
                         {/* Tombol bulk mark per baris mahasiswa */}
                         {meetings.some(m => row[m.id] === '—') && (
                           <button
                             onClick={() => setConfirmTarget({ type: 'student', id: row.student_id, nama: row.nama })}
-                            className="mt-1 flex items-center gap-0.5 mx-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors"
+                            className="mt-1 flex items-center gap-0.5 mx-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-rose-500/[0.03] text-rose-300 hover:bg-rose-500/[0.07] border border-rose-400/25 transition-colors"
                             title="Tandai semua yang kosong sebagai Tidak Hadir"
                           >
                             <UserX className="h-2.5 w-2.5" />
@@ -613,6 +646,36 @@ export default function RekapPage() {
                           </button>
                         )}
                       </td>
+                      {/* Kolom Ringkasan per mahasiswa */}
+                      {(() => {
+                        const totalLate = Number(row.__late ?? 0)
+                        const totalHadir = Number(row.__hadir ?? 0)
+                        const totalTidakHadir = Number(row.__tidak_hadir ?? 0)
+                        const lateAsAbsen = Math.floor(totalLate / 3)
+                        const totalAbsenEfektif = totalTidakHadir + lateAsAbsen
+                        return (
+                          <td className="px-3 py-2 text-center border-r border-muted">
+                            <div className="flex flex-col items-center gap-0.5">
+                              <div className="flex items-center gap-1.5 text-[11px]">
+                                <span className="inline-block rounded px-1 py-0 bg-emerald-500/[0.07] text-emerald-200 font-medium">H:{totalHadir}</span>
+                                <span className="inline-block rounded px-1 py-0 bg-amber-500/[0.07] text-amber-200 font-medium">L:{totalLate}</span>
+                                <span className="inline-block rounded px-1 py-0 bg-rose-500/[0.07] text-rose-200 font-medium">X:{totalTidakHadir}</span>
+                              </div>
+                              {totalLate > 0 && (
+                                <div className={`text-[10px] font-medium mt-0.5 ${lateAsAbsen > 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
+                                  {lateAsAbsen > 0
+                                    ? `⚠️ ${totalLate}L = +${lateAsAbsen} absen (total: ${totalAbsenEfektif})`
+                                    : `${totalLate}L (belum 3x)`
+                                  }
+                                </div>
+                              )}
+                              {totalLate === 0 && totalAbsenEfektif > 0 && (
+                                <div className="text-[10px] text-rose-300 font-medium">{totalAbsenEfektif} absen</div>
+                              )}
+                            </div>
+                          </td>
+                        )
+                      })()}
                       {meetings.map((m: Meeting) => {
                         const val = row[m.id] as string
                         const status = val as AttendanceStatus
@@ -633,18 +696,18 @@ export default function RekapPage() {
                                         {val === 'HADIR' ? 'H' : val === 'LATE' ? 'L' : 'X'}
                                       </span>
                                     ) : (
-                                      <span className="text-gray-300 text-xs hover:text-gray-500">—</span>
+                                      <span className="text-white/25 text-xs hover:text-white/45">—</span>
                                     )}
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="center" className="min-w-28">
                                   <DropdownMenuItem onClick={() => updateAttendance(row.student_id, m.id, 'HADIR')} disabled={val === 'HADIR'}>
-                                    <span className="inline-block rounded px-1.5 py-0.5 bg-green-100 text-green-800 text-xs font-medium mr-2">H</span> Hadir
+                                    <span className="inline-block rounded px-1.5 py-0.5 bg-emerald-500/[0.07] text-emerald-200 text-xs font-medium mr-2">H</span> Hadir
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => updateAttendance(row.student_id, m.id, 'LATE')} disabled={val === 'LATE'}>
-                                    <span className="inline-block rounded px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-medium mr-2">L</span> Late
+                                    <span className="inline-block rounded px-1.5 py-0.5 bg-amber-500/[0.07] text-amber-200 text-xs font-medium mr-2">L</span> Late
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => updateAttendance(row.student_id, m.id, 'TIDAK_HADIR')} disabled={val === 'TIDAK_HADIR'}>
-                                    <span className="inline-block rounded px-1.5 py-0.5 bg-red-100 text-red-800 text-xs font-medium mr-2">X</span> Tidak Hadir
+                                    <span className="inline-block rounded px-1.5 py-0.5 bg-rose-500/[0.07] text-rose-200 text-xs font-medium mr-2">X</span> Tidak Hadir
                                   </DropdownMenuItem>
                                   {val && val !== '—' && (
                                     <DropdownMenuItem onClick={() => updateAttendance(row.student_id, m.id, 'HAPUS')} className="text-muted-foreground">
@@ -668,10 +731,10 @@ export default function RekapPage() {
 
       {/* Legend */}
       <div className="flex gap-3 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1"><span className="inline-block rounded px-1.5 py-0.5 bg-green-100 text-green-800 font-medium">H</span> HADIR</span>
-        <span className="flex items-center gap-1"><span className="inline-block rounded px-1.5 py-0.5 bg-yellow-100 text-yellow-800 font-medium">L</span> LATE</span>
-        <span className="flex items-center gap-1"><span className="inline-block rounded px-1.5 py-0.5 bg-red-100 text-red-800 font-medium">X</span> TIDAK HADIR</span>
-        <span className="flex items-center gap-1 text-red-400"><UserX className="h-3 w-3" /> tombol merah = isi status kosong (—) → Tidak Hadir</span>
+        <span className="flex items-center gap-1"><span className="inline-block rounded px-1.5 py-0.5 bg-emerald-500/[0.07] text-emerald-200 font-medium">H</span> HADIR</span>
+        <span className="flex items-center gap-1"><span className="inline-block rounded px-1.5 py-0.5 bg-amber-500/[0.07] text-amber-200 font-medium">L</span> LATE</span>
+        <span className="flex items-center gap-1"><span className="inline-block rounded px-1.5 py-0.5 bg-rose-500/[0.07] text-rose-200 font-medium">X</span> TIDAK HADIR</span>
+        <span className="flex items-center gap-1 text-rose-400"><UserX className="h-3 w-3" /> tombol merah = isi status kosong (—) → Tidak Hadir</span>
       </div>
 
       {/* Dialog konfirmasi bulk mark */}
@@ -679,7 +742,7 @@ export default function RekapPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserX className="h-5 w-5 text-red-500" />
+              <UserX className="h-5 w-5 text-rose-400" />
               Tandai Kosong sebagai Tidak Hadir?
             </DialogTitle>
           </DialogHeader>
@@ -688,13 +751,13 @@ export default function RekapPage() {
               <p>
                 Semua mahasiswa yang statusnya <strong>kosong (—)</strong> di event{' '}
                 <strong className="text-foreground">"{confirmTarget.label}"</strong> akan diubah menjadi{' '}
-                <span className="inline-block rounded px-1.5 py-0.5 bg-red-100 text-red-800 text-xs font-medium">X Tidak Hadir</span>.
+                <span className="inline-block rounded px-1.5 py-0.5 bg-rose-500/[0.07] text-rose-200 text-xs font-medium">X Tidak Hadir</span>.
               </p>
             ) : (
               <p>
                 Semua event yang statusnya <strong>kosong (—)</strong> untuk mahasiswa{' '}
                 <strong className="text-foreground">"{confirmTarget?.nama}"</strong> akan diubah menjadi{' '}
-                <span className="inline-block rounded px-1.5 py-0.5 bg-red-100 text-red-800 text-xs font-medium">X Tidak Hadir</span>.
+                <span className="inline-block rounded px-1.5 py-0.5 bg-rose-500/[0.07] text-rose-200 text-xs font-medium">X Tidak Hadir</span>.
               </p>
             )}
             <p className="text-xs">Status yang sudah terisi (H / L / X) tidak akan terpengaruh.</p>

@@ -8,6 +8,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
+  --font-display: var(--font-display);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -47,78 +48,97 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ─── Light Mode: Professional Blue & White ─────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   ACTIVE THEORY — DESIGN TOKENS
+   Kanvas hitam pekat, neon "tubes", border hairline, tipografi
+   grotesk uppercase dengan tracking lebar.
+   ══════════════════════════════════════════════════════════════ */
+
 :root {
-  --background: oklch(0.99 0.002 220);
-  --foreground: oklch(0.18 0.02 230);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 230);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 230);
-  /* Primary: Rich Blue #1D4ED8 / blue-700 */
-  --primary: oklch(0.50 0.22 255);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.95 0.01 230);
-  --secondary-foreground: oklch(0.30 0.02 230);
-  --muted: oklch(0.96 0.008 225);
-  --muted-foreground: oklch(0.52 0.018 230);
-  --accent: oklch(0.93 0.025 240);
-  --accent-foreground: oklch(0.28 0.02 230);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.90 0.012 230);
-  --input: oklch(0.93 0.012 230);
-  --ring: oklch(0.50 0.22 255);
-  /* Charts — blue scale */
-  --chart-1: oklch(0.50 0.22 255);
-  --chart-2: oklch(0.62 0.18 230);
-  --chart-3: oklch(0.72 0.12 210);
-  --chart-4: oklch(0.80 0.08 200);
-  --chart-5: oklch(0.88 0.05 195);
-  --radius: 0.75rem;
-  /* Sidebar */
-  --sidebar: oklch(0.24 0.04 255);
-  --sidebar-foreground: oklch(0.94 0.005 225);
-  --sidebar-primary: oklch(0.60 0.20 250);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.32 0.05 255);
-  --sidebar-accent-foreground: oklch(0.94 0.005 225);
-  --sidebar-border: oklch(0.30 0.04 255);
-  --sidebar-ring: oklch(0.60 0.20 250);
+  /* ── Canvas ─────────────────────────────────────────────── */
+  --background: #050506;
+  --foreground: #f4f4f6;
+
+  --card: #0b0b0e;
+  --card-foreground: #f4f4f6;
+  --popover: #0b0b0e;
+  --popover-foreground: #f4f4f6;
+
+  /* ── Neon tube palette ──────────────────────────────────── */
+  --primary: #4d6bff;
+  --primary-foreground: #ffffff;
+  --blue: #4d6bff;
+  --violet: #8b5cf6;
+  --magenta: #ff3d81;
+  --cyan: #22d3ee;
+  --amber: #ffb547;
+
+  --secondary: #121216;
+  --secondary-foreground: #e6e6ea;
+  --muted: #101014;
+  --muted-foreground: #7c7c88;
+  --accent: #16161c;
+  --accent-foreground: #f4f4f6;
+  --destructive: #ff3d5e;
+
+  /* ── Hairlines ──────────────────────────────────────────── */
+  --border: rgb(255 255 255 / 9%);
+  --input: rgb(255 255 255 / 12%);
+  --ring: #4d6bff;
+
+  /* ── Charts ─────────────────────────────────────────────── */
+  --chart-1: #4d6bff;
+  --chart-2: #8b5cf6;
+  --chart-3: #ff3d81;
+  --chart-4: #22d3ee;
+  --chart-5: #ffb547;
+
+  --radius: 0.5rem;
+
+  /* ── Sidebar ────────────────────────────────────────────── */
+  --sidebar: #08080a;
+  --sidebar-foreground: #a0a0ad;
+  --sidebar-primary: #4d6bff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #131318;
+  --sidebar-accent-foreground: #f4f4f6;
+  --sidebar-border: rgb(255 255 255 / 8%);
+  --sidebar-ring: #4d6bff;
 }
 
-/* ─── Dark Mode: Deep Navy Blue ─────────────────────────────── */
+/* Dark is the default canvas — dipaksa lewat <html class="dark"> */
 .dark {
-  --background: oklch(0.13 0.02 255);
-  --foreground: oklch(0.96 0.005 225);
-  --card: oklch(0.18 0.025 255);
-  --card-foreground: oklch(0.96 0.005 225);
-  --popover: oklch(0.18 0.025 255);
-  --popover-foreground: oklch(0.96 0.005 225);
-  --primary: oklch(0.62 0.20 250);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.22 0.025 255);
-  --secondary-foreground: oklch(0.96 0.005 225);
-  --muted: oklch(0.22 0.025 255);
-  --muted-foreground: oklch(0.65 0.018 235);
-  --accent: oklch(0.26 0.04 255);
-  --accent-foreground: oklch(0.96 0.005 225);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.62 0.20 250);
-  --chart-1: oklch(0.62 0.20 250);
-  --chart-2: oklch(0.70 0.16 230);
-  --chart-3: oklch(0.78 0.11 210);
-  --chart-4: oklch(0.84 0.07 200);
-  --chart-5: oklch(0.90 0.04 195);
-  --sidebar: oklch(0.15 0.025 255);
-  --sidebar-foreground: oklch(0.94 0.005 225);
-  --sidebar-primary: oklch(0.62 0.20 250);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.22 0.035 255);
-  --sidebar-accent-foreground: oklch(0.94 0.005 225);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.62 0.20 250);
+  --background: #050506;
+  --foreground: #f4f4f6;
+  --card: #0b0b0e;
+  --card-foreground: #f4f4f6;
+  --popover: #0b0b0e;
+  --popover-foreground: #f4f4f6;
+  --primary: #4d6bff;
+  --primary-foreground: #ffffff;
+  --secondary: #121216;
+  --secondary-foreground: #e6e6ea;
+  --muted: #101014;
+  --muted-foreground: #7c7c88;
+  --accent: #16161c;
+  --accent-foreground: #f4f4f6;
+  --destructive: #ff3d5e;
+  --border: rgb(255 255 255 / 9%);
+  --input: rgb(255 255 255 / 12%);
+  --ring: #4d6bff;
+  --chart-1: #4d6bff;
+  --chart-2: #8b5cf6;
+  --chart-3: #ff3d81;
+  --chart-4: #22d3ee;
+  --chart-5: #ffb547;
+  --sidebar: #08080a;
+  --sidebar-foreground: #a0a0ad;
+  --sidebar-primary: #4d6bff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #131318;
+  --sidebar-accent-foreground: #f4f4f6;
+  --sidebar-border: rgb(255 255 255 / 8%);
+  --sidebar-ring: #4d6bff;
 }
 
 @layer base {
@@ -129,131 +149,254 @@
     @apply bg-background text-foreground;
     font-feature-settings: "cv11", "ss01";
     font-variation-settings: "opsz" 32;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   html {
     @apply font-sans scroll-smooth;
+    color-scheme: dark;
+  }
+  /* Scrollbar Active Theory — tipis, putih, rounded */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 14%);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 24%);
+  }
+  ::selection {
+    background: rgb(77 107 255 / 35%);
+    color: #fff;
   }
 }
 
 @layer utilities {
-  /* ── Glass Effect ──────────────────────────────────────────── */
-  .glass {
-    @apply bg-white/90 backdrop-blur-xl border border-blue-100/60;
+  /* ════════════════════════════════════════════════════════════
+     CANVAS — "Tubes"
+     Lapisan mesh gradient bergerak yang meniru pipa cahaya
+     neon Active Theory.
+     ════════════════════════════════════════════════════════════ */
+  .tubes-canvas {
+    position: relative;
+    isolation: isolate;
+    background-color: #050506;
+    /* ::before memakai inset:-25% → glow melebar 1,25× dan memicu scroll
+       horizontal. clip (bukan hidden) memotong tanpa membuat scroll container. */
+    overflow-x: clip;
   }
-  .dark .glass {
-    @apply bg-blue-950/40 backdrop-blur-xl border border-blue-800/20;
+  .tubes-canvas::before {
+    content: "";
+    position: absolute;
+    inset: -25%;
+    z-index: -2;
+    background:
+      radial-gradient(38% 42% at 18% 22%, rgb(77 107 255 / 55%) 0%, transparent 62%),
+      radial-gradient(34% 38% at 82% 18%, rgb(139 92 246 / 48%) 0%, transparent 64%),
+      radial-gradient(40% 44% at 72% 82%, rgb(255 61 129 / 38%) 0%, transparent 66%),
+      radial-gradient(30% 34% at 26% 88%, rgb(34 211 238 / 34%) 0%, transparent 66%);
+    filter: blur(58px);
+    animation: tube-drift 26s ease-in-out infinite alternate;
+  }
+  .tubes-canvas::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(rgb(255 255 255 / 3.5%) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 3.5%) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 20%, transparent 78%);
+    pointer-events: none;
   }
 
-  /* ── Gradients — Blue Only ─────────────────────────────────── */
+  /* Grain overlay — tekstur halus seperti film */
+  .tubes-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.16;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+
+  /* Hairline gradient border — garis nx yang_contents Hodgkin */
+  .tube-border {
+    position: relative;
+    border: 1px solid transparent;
+    background:
+      linear-gradient(#0b0b0e, #0b0b0e) padding-box,
+      linear-gradient(120deg, rgb(77 107 255 / 55%), rgb(139 92 246 / 25%), rgb(255 61 129 / 45%)) border-box;
+  }
+  .tube-border-soft {
+    border: 1px solid rgb(255 255 255 / 8%);
+    background: linear-gradient(180deg, rgb(255 255 255 / 3%), transparent 60%), #0b0b0e;
+  }
+
+  /* Panel kaca gelap */
+  .glass {
+    @apply bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08];
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     TIPOGRAFI
+     ════════════════════════════════════════════════════════════ */
+  .at-label {
+    @apply text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground;
+  }
+  .at-display {
+    font-family: var(--font-display), var(--font-inter), system-ui, sans-serif;
+    @apply font-semibold tracking-[-0.03em];
+  }
+  .at-title {
+    font-family: var(--font-display), var(--font-inter), system-ui, sans-serif;
+    @apply font-semibold uppercase tracking-[0.12em] text-foreground;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     GRADIENT — Neon tubes
+     ════════════════════════════════════════════════════════════ */
   .gradient-primary {
-    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
+    background: linear-gradient(120deg, #4d6bff 0%, #8b5cf6 52%, #ff3d81 100%);
   }
   .gradient-hero {
-    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 45%, #2563eb 100%);
+    background: #050506;
   }
   .gradient-card {
-    @apply bg-gradient-to-br from-white to-blue-50/40 dark:from-blue-950 dark:to-blue-900/50;
+    background: linear-gradient(180deg, rgb(255 255 255 / 3.5%), transparent 55%), #0b0b0e;
   }
   .gradient-subtle {
-    @apply bg-gradient-to-br from-background to-blue-50/20 dark:to-blue-950/20;
+    background: linear-gradient(180deg, rgb(255 255 255 / 2.5%), transparent 70%);
   }
   .gradient-blue {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #4d6bff 0%, #6d7bff 100%);
   }
   .gradient-blue-light {
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, #7c8bff 0%, #22d3ee 100%);
+  }
+  .gradient-purple {
+    background: linear-gradient(135deg, #8b5cf6 0%, #ff3d81 100%);
   }
   .gradient-green {
-    @apply bg-gradient-to-br from-emerald-500 to-green-600;
+    background: linear-gradient(135deg, #10b981 0%, #22d3ee 100%);
   }
   .gradient-orange {
-    @apply bg-gradient-to-br from-orange-400 to-orange-500;
+    background: linear-gradient(135deg, #ffb547 0%, #ff3d81 100%);
   }
   .gradient-red {
-    @apply bg-gradient-to-br from-red-500 to-rose-600;
+    background: linear-gradient(135deg, #ff3d5e 0%, #ff3d81 100%);
   }
-  /* Sidebar gradient for dark navy */
   .gradient-sidebar {
-    background: linear-gradient(180deg, #1e2d5a 0%, #1a2547 50%, #161e3a 100%);
+    background: #08080a;
   }
 
-  /* ── Text Gradients — Blue Only ────────────────────────────── */
+  /* ── Text gradients ─────────────────────────────────────── */
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #1d4ed8 0%, #2563eb 60%, #60a5fa 100%);
+    background-image: linear-gradient(120deg, #7c8bff 0%, #a78bfa 50%, #ff6ea3 100%);
   }
   .text-gradient-primary {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+    background-image: linear-gradient(120deg, #4d6bff 0%, #8b5cf6 55%, #ff3d81 100%);
   }
 
-  /* ── Shadows ────────────────────────────────────────────────── */
+  /* ════════════════════════════════════════════════════════════
+     SHADOW & GLOW
+     ════════════════════════════════════════════════════════════ */
   .shadow-glow {
-    box-shadow: 0 0 40px -10px rgb(37 99 235 / 35%);
+    box-shadow: 0 0 60px -12px rgb(77 107 255 / 45%);
   }
   .shadow-glow-sm {
-    box-shadow: 0 0 20px -5px rgb(37 99 235 / 25%);
+    box-shadow: 0 0 28px -8px rgb(77 107 255 / 40%);
   }
   .shadow-card {
     box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.04),
-      0 4px 12px rgb(0 0 0 / 0.06),
-      0 0 0 1px rgb(37 99 235 / 0.04);
+      0 1px 0 0 rgb(255 255 255 / 4%) inset,
+      0 8px 30px -12px rgb(0 0 0 / 0.8);
   }
   .dark .shadow-card {
     box-shadow:
-      0 2px 8px rgb(0 0 0 / 0.3),
-      0 4px 16px rgb(0 0 0 / 0.4),
-      0 0 0 1px rgb(59 130 246 / 0.08);
+      0 1px 0 0 rgb(255 255 255 / 4%) inset,
+      0 8px 30px -12px rgb(0 0 0 / 0.9);
   }
   .shadow-float {
-    box-shadow:
-      0 8px 32px -8px rgb(37 99 235 / 0.15),
-      0 2px 8px -2px rgb(0 0 0 / 0.06);
+    box-shadow: 0 18px 50px -18px rgb(0 0 0 / 0.9);
   }
   .dark .shadow-float {
-    box-shadow:
-      0 8px 32px -8px rgb(0 0 0 / 0.5),
-      0 2px 8px -2px rgb(0 0 0 / 0.3);
+    box-shadow: 0 18px 50px -18px rgb(0 0 0 / 1);
   }
   .shadow-blue {
-    box-shadow: 0 4px 24px -4px rgb(37 99 235 / 0.3);
+    box-shadow: 0 6px 26px -8px rgb(77 107 255 / 45%);
   }
 
-  /* ── Border Glow — Blue ─────────────────────────────────────── */
   .border-glow {
     @apply relative;
   }
   .border-glow::after {
     content: '';
     @apply absolute inset-0 rounded-lg -z-10 blur-sm opacity-0 transition-opacity duration-300;
-    background: linear-gradient(45deg, rgb(37 99 235 / 25%), rgb(59 130 246 / 20%), rgb(96 165 250 / 15%));
+    background: linear-gradient(120deg, rgb(77 107 255 / 30%), rgb(139 92 246 / 22%), rgb(255 61 129 / 25%));
   }
   .border-glow:hover::after {
     @apply opacity-100;
   }
 
-  /* ── Professional Utility Classes ───────────────────────────── */
+  /* ════════════════════════════════════════════════════════════
+     UTILITAS
+     ════════════════════════════════════════════════════════════ */
   .nav-link-active {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    @apply text-white shadow-md;
+    background: linear-gradient(120deg, rgb(77 107 255 / 90%), rgb(139 92 246 / 90%));
+    @apply text-white;
+    box-shadow: 0 6px 26px -8px rgb(77 107 255 / 45%);
   }
   .badge-blue {
-    @apply bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300;
+    @apply bg-blue-500/12 text-blue-300 border-blue-400/25;
   }
   .badge-green {
-    @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300;
+    @apply bg-emerald-500/12 text-emerald-300 border-emerald-400/25;
   }
   .badge-red {
-    @apply bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300;
+    @apply bg-rose-500/12 text-rose-300 border-rose-400/25;
   }
   .badge-yellow {
-    @apply bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300;
+    @apply bg-amber-500/12 text-amber-300 border-amber-400/25;
   }
 
-  /* ── Animations ─────────────────────────────────────────────── */
   .animate-in-fast {
     animation-duration: 150ms;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     ANIMASI
+     ════════════════════════════════════════════════════════════ */
+  @keyframes tube-drift {
+    0% {
+      transform: translate3d(-3%, -2%, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(3%, 3%, 0) scale(1.08);
+    }
+    100% {
+      transform: translate3d(-1%, 2%, 0) scale(1.02);
+    }
+  }
+
+  @keyframes tube-drift-slow {
+    0% {
+      transform: translate3d(2%, 3%, 0) scale(1.05);
+    }
+    100% {
+      transform: translate3d(-3%, -2%, 0) scale(1);
+    }
   }
 
   @keyframes bounce-gentle {
@@ -280,13 +423,48 @@
     animation: progress-loading 2.5s ease-out forwards;
   }
 
-  /* ── Blue Pulse for Live Indicator ─────────────────────────── */
   @keyframes pulse-blue {
-    0%, 100% { box-shadow: 0 0 0 0 rgb(37 99 235 / 40%); }
-    50% { box-shadow: 0 0 0 8px rgb(37 99 235 / 0%); }
+    0%, 100% { box-shadow: 0 0 0 0 rgb(77 107 255 / 40%); }
+    50% { box-shadow: 0 0 0 8px rgb(77 107 255 / 0%); }
   }
 
   .animate-pulse-blue {
     animation: pulse-blue 2s ease-in-out infinite;
+  }
+
+  /* Garis neon yang menelusuri tepi (untuk CTA) */
+  @keyframes sweep {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(220%); }
+  }
+  .animate-sweep::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 22%), transparent);
+    animation: sweep 3.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     MARQUEE — infinite ticker
+     ════════════════════════════════════════════════════════════ */
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: marquee 38s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-marquee,
+    .tubes-canvas::before,
+    .animate-sweep::after,
+    .animate-bounce-gentle,
+    .animate-progress-loading {
+      animation: none !important;
+    }
   }
 }

@@ -10,9 +10,9 @@ import type { EventType, AttendanceStatus, AttendanceStats, AttendanceRow } from
 import { EVENT_TYPE_LABELS, STATUS_LABELS } from '@/lib/types'
 
 const STATUS_COLORS: Record<AttendanceStatus, string> = {
-  HADIR: 'bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30',
-  LATE: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30',
-  TIDAK_HADIR: 'bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30',
+  HADIR: 'bg-emerald-500/[0.07] text-emerald-300 border-emerald-400/25',
+  LATE: 'bg-amber-500/[0.07] text-amber-300 border-amber-400/25',
+  TIDAK_HADIR: 'bg-rose-500/[0.07] text-rose-300 border-rose-400/25',
 }
 
 const STATUS_ICONS: Record<AttendanceStatus, React.ElementType> = {
@@ -80,9 +80,10 @@ export default function StudentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-white dark:from-[#0c1a5e] dark:via-[#1a3590] dark:to-[#1e50c8] flex flex-col">
+    <div className="tubes-canvas min-h-screen flex flex-col">
+      <div className="absolute inset-0 tubes-grain pointer-events-none" />
       {/* Header */}
-      <div className="bg-white/80 dark:bg-blue-950/60 backdrop-blur-xl border-b border-border dark:border-white/10 px-4 py-4">
+      <div className="bg-white/[0.03] backdrop-blur-xl border-b border-white/[0.09] px-4 py-4">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-lg">
             <BookOpen className="h-5 w-5 text-white" />
@@ -104,7 +105,7 @@ export default function StudentPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Masukkan No. Registrasi..."
-                  className="text-base h-12 pl-11 rounded-xl border-border/50 focus:border-primary/50 focus:ring-primary/20"
+                  className="text-base h-12 pl-11 rounded-xl border-white/[0.09] focus:border-primary/50 focus:ring-primary/20"
                   autoCapitalize="off"
                   autoCorrect="off"
                   spellCheck={false}
@@ -119,11 +120,11 @@ export default function StudentPage() {
         </Card>
 
         {error && (
-          <Card className="border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 animate-in fade-in slide-in-from-top-2">
+          <Card className="border-rose-400/25 bg-rose-500/[0.05] animate-in fade-in slide-in-from-top-2">
             <CardContent className="py-4">
               <div className="flex items-center gap-3">
-                <XCircle className="h-5 w-5 text-red-500 shrink-0" />
-                <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
+                <XCircle className="h-5 w-5 text-rose-400 shrink-0" />
+                <p className="text-sm text-rose-300 font-medium">{error}</p>
               </div>
             </CardContent>
           </Card>
@@ -131,9 +132,9 @@ export default function StudentPage() {
 
         {candidates && candidates.length > 0 && (
           <Card className="shadow-card border-glow animate-in fade-in slide-in-from-top-4">
-            <CardHeader className="pb-3 border-b border-border/50 bg-muted/20">
+            <CardHeader className="pb-3 border-b border-white/[0.09] bg-muted/20">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-500" />
+                <Users className="h-4 w-4 text-blue-400" />
                 Ditemukan {candidates.length} Mahasiswa
               </CardTitle>
             </CardHeader>
@@ -146,16 +147,16 @@ export default function StudentPage() {
                       setSearchQuery(cand.no_regis)
                       handleSearch(undefined, cand.no_regis)
                     }}
-                    className="w-full text-left flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors focus:outline-none focus:bg-muted"
+                    className="w-full text-left flex items-center gap-4 p-4 hover:bg-white/[0.02] transition-colors focus:outline-none focus:bg-white/[0.03]"
                   >
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-300 flex items-center justify-center shrink-0">
                       <User className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
                       <p className="font-bold text-sm text-foreground">
                         {cand.last_name}, {cand.first_name}
                         {cand.status === 'MAGANG' && (
-                          <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded border bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400 text-[9px] font-bold uppercase tracking-wider">Magang</span>
+                          <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded border bg-orange-500/10 border-orange-500/20 text-orange-400 text-[9px] font-bold uppercase tracking-wider">Magang</span>
                         )}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -175,7 +176,7 @@ export default function StudentPage() {
             <Card className="shadow-card border-glow overflow-hidden">
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center shadow-lg">
+                  <div className="w-14 h-14 gradient-primary rounded-xl flex items-center justify-center shadow-lg">
                     <User className="h-7 w-7 text-white" />
                   </div>
                   <div className="flex-1">
@@ -184,7 +185,7 @@ export default function StudentPage() {
                         {result.student.last_name}, {result.student.first_name}
                       </p>
                       {result.student.status === 'MAGANG' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400 text-[10px] font-bold uppercase tracking-wider shadow-sm">🏢 Magang</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-orange-500/10 border-orange-500/20 text-orange-400 text-[10px] font-bold uppercase tracking-wider shadow-sm">🏢 Magang</span>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-0.5">
@@ -200,7 +201,7 @@ export default function StudentPage() {
               <Card className="shadow-card border-glow">
                 <CardContent className="py-4">
                   <div className="text-center space-y-1">
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{result.stats.total}</p>
+                    <p className="text-2xl font-bold text-blue-300">{result.stats.total}</p>
                     <p className="text-xs text-muted-foreground font-medium">Total</p>
                   </div>
                 </CardContent>
@@ -209,9 +210,9 @@ export default function StudentPage() {
                 <CardContent className="py-4">
                   <div className="text-center space-y-1">
                     <div className="flex items-center justify-center mb-0.5">
-                      <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 mr-1" />
                     </div>
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{result.stats.hadir}</p>
+                    <p className="text-2xl font-bold text-emerald-300">{result.stats.hadir}</p>
                     <p className="text-xs text-muted-foreground font-medium">Hadir</p>
                   </div>
                 </CardContent>
@@ -220,9 +221,9 @@ export default function StudentPage() {
                 <CardContent className="py-4">
                   <div className="text-center space-y-1">
                     <div className="flex items-center justify-center mb-0.5">
-                      <Clock className="h-4 w-4 text-yellow-500 mr-1" />
+                      <Clock className="h-4 w-4 text-amber-400 mr-1" />
                     </div>
-                    <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{result.stats.late}</p>
+                    <p className="text-2xl font-bold text-amber-300">{result.stats.late}</p>
                     <p className="text-xs text-muted-foreground font-medium">Late</p>
                   </div>
                 </CardContent>
@@ -231,9 +232,9 @@ export default function StudentPage() {
                 <CardContent className="py-4">
                   <div className="text-center space-y-1">
                     <div className="flex items-center justify-center mb-0.5">
-                      <XCircle className="h-4 w-4 text-red-500 mr-1" />
+                      <XCircle className="h-4 w-4 text-rose-400 mr-1" />
                     </div>
-                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">{result.stats.tidak_hadir}</p>
+                    <p className="text-2xl font-bold text-rose-300">{result.stats.tidak_hadir}</p>
                     <p className="text-xs text-muted-foreground font-medium">Absen</p>
                   </div>
                 </CardContent>
@@ -244,7 +245,7 @@ export default function StudentPage() {
             <Card className="shadow-card border-glow">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-blue-500" />
+                  <BookOpen className="h-4 w-4 text-blue-400" />
                   Riwayat Kehadiran
                 </CardTitle>
               </CardHeader>
@@ -252,7 +253,7 @@ export default function StudentPage() {
                 <div className="rounded-b-xl overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-muted/50">
+                      <TableRow className="bg-white/[0.02]">
                         <TableHead className="text-xs font-semibold">Event</TableHead>
                         <TableHead className="text-xs font-semibold">Tanggal</TableHead>
                         <TableHead className="text-xs font-semibold text-center">Status</TableHead>
@@ -272,7 +273,7 @@ export default function StudentPage() {
                         result.attendances.map((a) => {
                           const StatusIcon = STATUS_ICONS[a.status]
                           return (
-                            <TableRow key={a.id} className="hover:bg-muted/30">
+                            <TableRow key={a.id} className="hover:bg-white/[0.02]">
                               <TableCell className="text-xs">
                                 <div className="font-medium">{a.meeting?.nama_event ?? '—'}</div>
                                 {a.meeting && (

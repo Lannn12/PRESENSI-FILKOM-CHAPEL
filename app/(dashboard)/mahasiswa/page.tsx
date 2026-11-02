@@ -34,7 +34,7 @@ export default function MahasiswaPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">Manage Mahasiswa</h1>
+        <h1 className="at-display text-3xl font-bold tracking-[-0.03em] text-white">Manage Mahasiswa</h1>
         <p className="text-sm text-muted-foreground">Kelola data mahasiswa dan grup absenter</p>
       </div>
       {activeSemester && (
@@ -228,13 +228,13 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
+      <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle className="text-base">Data Mahasiswa</CardTitle>
           <CardDescription>{totalCount} mahasiswa terdaftar</CardDescription>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex gap-2">
+        <div className="flex flex-col items-start gap-1 sm:items-end">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
               {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
               Import CSV/Excel
@@ -244,7 +244,7 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
               Hapus Semua
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">Kolom: <code className="bg-muted px-1 rounded">noreg; name; major; gender</code> — name: <code className="bg-muted px-1 rounded">LastName, FirstName</code></p>
+          <p className="text-xs text-muted-foreground">Kolom: <code className="bg-white/[0.03] px-1 rounded">noreg; name; major; gender</code> — name: <code className="bg-white/[0.03] px-1 rounded">LastName, FirstName</code></p>
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileUpload} />
         </div>
       </CardHeader>
@@ -293,7 +293,7 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
               ) : students.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Tidak ada data</TableCell></TableRow>
               ) : students.map((s) => (
-                <TableRow key={s.id} className={s.status === 'MAGANG' ? 'bg-orange-50/50 dark:bg-orange-950/10' : ''}>
+                <TableRow key={s.id} className={s.status === 'MAGANG' ? 'bg-orange-500/[0.05]' : ''}>
                   <TableCell className="text-sm font-mono">{s.no_regis}</TableCell>
                   <TableCell className="text-sm">{s.last_name}, {s.first_name}</TableCell>
                   <TableCell className="text-sm">{s.major}</TableCell>
@@ -320,10 +320,10 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-0.5">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-500 hover:text-blue-700" title="Copy link kehadiran" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/student/${s.no_regis}`); toast.success('Link disalin!') }}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-400 hover:text-blue-300" title="Copy link kehadiran" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/student/${s.no_regis}`); toast.success('Link disalin!') }}>
                         <Link className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700" onClick={() => setDeleteId(s.id)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400 hover:text-rose-300" onClick={() => setDeleteId(s.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -369,7 +369,7 @@ function StudentsTab({ activeSemester }: { activeSemester: Semester | null }) {
         <DialogContent>
           <DialogHeader><DialogTitle>Hapus Semua Data Mahasiswa?</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-red-600 font-medium">PERINGATAN KERAS!</p>
+            <p className="text-sm text-rose-300 font-medium">PERINGATAN KERAS!</p>
             <p className="text-sm text-muted-foreground">
               Anda akan menghapus <strong>{totalCount}</strong> mahasiswa. 
               Semua data presensi, absenter group, dan penetapan tempat duduk terkait akan ikut terhapus secara permanen.
@@ -503,11 +503,11 @@ function AbsenterTab({ activeSemester }: { activeSemester: Semester | null }) {
                   <div>
                     <p className="text-sm font-medium">{g.nama_group}</p>
                     {g.deskripsi && <p className="text-xs text-muted-foreground">{g.deskripsi}</p>}
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1 ${g.member_count > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1 ${g.member_count > 0 ? 'bg-blue-500/10 text-blue-300' : 'bg-white/[0.06] text-white/45'}`}>
                       {g.member_count} anggota
                     </span>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 shrink-0" onClick={(e) => { e.stopPropagation(); setDeleteGroupId(g.id) }}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400 shrink-0" onClick={(e) => { e.stopPropagation(); setDeleteGroupId(g.id) }}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>

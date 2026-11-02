@@ -25,10 +25,10 @@ import { Separator } from '@/components/ui/separator'
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/semester', label: 'Semester', icon: GraduationCap },
-  { href: '/mahasiswa', label: 'Kelola Mahasiswa', icon: Users },
+  { href: '/mahasiswa', label: 'Mahasiswa', icon: Users },
   { href: '/seating', label: 'Seating', icon: Grid3X3 },
   { href: '/pertemuan', label: 'Events', icon: CalendarDays },
-  { href: '/rekap', label: 'Rekap & Export', icon: BarChart3 },
+  { href: '/rekap', label: 'Rekap', icon: BarChart3 },
 ]
 
 export default function Sidebar() {
@@ -44,66 +44,124 @@ export default function Sidebar() {
     router.refresh()
   }
 
-  const NavContent = () => (
-    <div className="flex flex-col h-full" style={{ background: 'linear-gradient(180deg, #1e3a8a 0%, #1d3070 50%, #172154 100%)' }}>
-      {/* Logo / Brand */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-blue-700/40">
-        <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center shrink-0 shadow-lg border border-white/20">
-          <BookOpen className="h-5 w-5 text-white" />
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex flex-col w-[228px] h-screen sticky top-0 shrink-0 border-r border-white/[0.07]">
+        <NavContent pathname={pathname} onNavigate={() => setOpen(false)} onLogout={handleLogout} />
+      </aside>
+
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 border-b border-white/[0.07] bg-[#08080a]/95 backdrop-blur-xl">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#0d0d11] border border-white/10 flex items-center justify-center">
+            <BookOpen className="h-4 w-4 text-white" />
+          </div>
+          <span className="at-title text-[13px]">Presensi FILKOM</span>
         </div>
-        <div className="flex-1">
-          <p className="font-bold text-sm leading-tight text-white tracking-tight">Presensi FILKOM</p>
-          <p className="text-xs text-blue-200/70 mt-0.5 font-medium">Universitas Klabat</p>
+        <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="rounded-lg text-white hover:bg-white/10">
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
+      </div>
+
+      {/* Mobile overlay */}
+      {open && (
+        <div className="md:hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setOpen(false)}
+        />
+      )}
+      <aside
+        className={cn(
+          'md:hidden fixed top-0 left-0 z-50 h-full w-72 border-r border-white/[0.07] transition-transform duration-300 ease-out',
+          open ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <NavContent pathname={pathname} onNavigate={() => setOpen(false)} onLogout={handleLogout} />
+      </aside>
+    </>
+  )
+}
+
+/**
+ * Konten navigasi. Defined di luar Sidebar agar tidak di-remount pada
+ * setiap render (reactive: static-components).
+ */
+function NavContent({
+  pathname,
+  onNavigate,
+  onLogout,
+}: {
+  pathname: string
+  onNavigate: () => void
+  onLogout: () => void
+}) {
+  return (
+    <div className="flex flex-col h-full bg-[#08080a]">
+      {/* Logo / Brand */}
+      <div className="flex items-center gap-3 px-5 py-6 border-b border-white/[0.07]">
+        <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
+          <div className="absolute inset-0 rounded-xl gradient-primary opacity-90 blur-[6px]" />
+          <div className="relative w-9 h-9 rounded-xl bg-[#0d0d11] border border-white/10 flex items-center justify-center">
+            <BookOpen className="h-4 w-4 text-white" />
+          </div>
+        </div>
+        <div className="min-w-0">
+          <p className="at-title text-[13px] leading-tight truncate">Presensi</p>
+          <p className="text-[10px] font-medium tracking-[0.18em] uppercase text-muted-foreground mt-0.5 truncate">FILKOM</p>
         </div>
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-5 space-y-1">
+        <p className="at-label px-3 pb-3">Menu</p>
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/' && pathname.startsWith(href))
           return (
             <Link
               key={href}
               href={href}
-              onClick={() => setOpen(false)}
+              onClick={onNavigate}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group',
+                'group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200',
                 active
-                  ? 'bg-white text-blue-700 shadow-md'
-                  : 'text-blue-100/80 hover:bg-white/10 hover:text-white'
+                  ? 'text-white bg-white/[0.05]'
+                  : 'text-muted-foreground hover:text-white hover:bg-white/[0.03]'
               )}
             >
-              <Icon className={cn(
-                "h-4 w-4 shrink-0 transition-all duration-150",
-                active ? "text-blue-600" : "text-blue-200/70 group-hover:text-white"
-              )} />
-              <span className={active ? 'font-semibold' : ''}>{label}</span>
+              {/* Active rail — neon gradient bar */}
               {active && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[2px] rounded-full gradient-primary" />
               )}
+              <Icon
+                className={cn(
+                  'h-4 w-4 shrink-0 transition-all duration-200',
+                  active ? 'text-white' : 'text-muted-foreground group-hover:text-white'
+                )}
+              />
+              <span className={cn('tracking-wide', active && 'text-white')}>{label}</span>
             </Link>
           )
         })}
       </nav>
 
-      <div className="border-t border-blue-700/40" />
+      <Separator className="bg-white/[0.07]" />
 
       {/* Footer Actions */}
       <div className="p-3 space-y-1.5">
         <button
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-blue-100/80 hover:bg-white/10 hover:text-white transition-all duration-150"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-muted-foreground hover:text-white hover:bg-white/[0.03] transition-all duration-200"
           onClick={() => {
             const url = `${window.location.origin}/student`
             navigator.clipboard.writeText(url)
             toast.success('Link portal mahasiswa disalin!')
           }}
         >
-          <LinkIcon className="h-4 w-4 text-blue-200/70" />
-          Link Portal Mahasiswa
+          <LinkIcon className="h-4 w-4" />
+          Portal Mahasiswa
         </button>
         <button
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-300/80 hover:bg-red-500/15 hover:text-red-200 transition-all duration-150"
-          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-rose-400/80 hover:text-rose-300 hover:bg-rose-500/10 transition-all duration-200"
+          onClick={onLogout}
         >
           <LogOut className="h-4 w-4" />
           Keluar
@@ -111,49 +169,9 @@ export default function Sidebar() {
       </div>
 
       {/* Version tag */}
-      <div className="px-5 pb-4">
-        <p className="text-[10px] text-blue-300/40 font-medium tracking-widest uppercase">v1.0 · FILKOM</p>
+      <div className="px-5 pb-5">
+        <p className="text-[10px] text-white/20 font-medium tracking-[0.25em] uppercase">v1.0</p>
       </div>
     </div>
-  )
-
-  return (
-    <>
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 shrink-0 shadow-xl">
-        <NavContent />
-      </aside>
-
-      {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 border-b border-blue-100 bg-white/95 backdrop-blur-xl shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' }}>
-            <BookOpen className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <span className="font-bold text-sm text-blue-800">Presensi FILKOM</span>
-          </div>
-        </div>
-        <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="rounded-lg text-blue-700 hover:bg-blue-50">
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-      </div>
-
-      {/* Mobile overlay */}
-      {open && (
-        <div
-          className="md:hidden fixed inset-0 z-40 bg-blue-950/60 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setOpen(false)}
-        />
-      )}
-      <aside
-        className={cn(
-          'md:hidden fixed top-0 left-0 z-50 h-full w-72 shadow-2xl transition-transform duration-300 ease-out',
-          open ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        <NavContent />
-      </aside>
-    </>
   )
 }

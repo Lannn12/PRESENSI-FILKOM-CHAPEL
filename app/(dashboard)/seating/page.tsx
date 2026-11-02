@@ -280,12 +280,12 @@ export default function SeatingPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Seating</h1>
+          <h1 className="at-display text-3xl font-bold tracking-[-0.03em] text-white">Seating</h1>
           <p className="text-sm text-muted-foreground">Kelola section & nomor kursi mahasiswa (row-column)</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport} disabled={exporting || !sections.length}>
-            {exporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-1 text-green-600" />}
+            {exporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-1 text-emerald-300" />}
             Export Excel
           </Button>
           <Button onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" />Section Baru</Button>
@@ -299,9 +299,9 @@ export default function SeatingPage() {
           <Card key={c.g}>
             <CardContent className="py-3 flex items-center justify-between">
               <div>
-                <span className={`font-semibold text-${c.color === 'blue' ? 'blue' : 'pink'}-600`}>{c.label}</span>
+                <span className={`font-semibold ${c.color === 'blue' ? 'text-blue-300' : 'text-pink-300'}`}>{c.label}</span>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {c.counts.assigned} sudah · <span className={c.counts.total - c.counts.assigned > 0 ? 'text-orange-500 font-medium' : 'text-green-600 font-medium'}>
+                  {c.counts.assigned} sudah · <span className={c.counts.total - c.counts.assigned > 0 ? 'text-orange-400 font-medium' : 'text-emerald-300 font-medium'}>
                     {c.counts.total - c.counts.assigned} belum
                   </span> · total {c.counts.total}
                 </p>
@@ -359,7 +359,7 @@ export default function SeatingPage() {
             {/* Assigned students with seat labels */}
             {assignedStudents.length > 0 && (
               <div className="rounded-lg border">
-                <div className="px-3 py-2 bg-muted/50 border-b">
+                <div className="px-3 py-2 bg-white/[0.02] border-b">
                   <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                     <Hash className="h-3 w-3" /> Mahasiswa Ter-assign ({assignedStudents.length})
                   </p>
@@ -384,7 +384,7 @@ export default function SeatingPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-red-500 hover:text-red-700 shrink-0"
+                              className="h-6 w-6 text-rose-400 hover:text-rose-300 shrink-0"
                               onClick={() => toggleAssign(a.student_id, false)}
                             >
                               <Trash2 className="h-3 w-3" />
@@ -460,7 +460,7 @@ export default function SeatingPage() {
               </div>
             </div>
             {formData.capacity && formData.columns_per_row && (
-              <div className="p-3 rounded-lg bg-muted/50 border text-xs space-y-1">
+              <div className="p-3 rounded-lg bg-white/[0.02] border text-xs space-y-1">
                 <p className="font-medium flex items-center gap-1.5"><Grid3X3 className="h-3 w-3" /> Preview Layout</p>
                 <p className="text-muted-foreground">
                   {Math.ceil(parseInt(formData.capacity) / (parseInt(formData.columns_per_row) || 1))} baris × {formData.columns_per_row} kolom = {formData.capacity} kursi
@@ -509,10 +509,17 @@ export default function SeatingPage() {
   )
 }
 
+/* Peta statis — Tailwind tidak bisa memindai kelas dinamis `border-${color}-200` */
+const SECTION_COLOR: Record<string, { border: string; text: string; label: string }> = {
+  blue: { border: 'border-blue-400/30', text: 'text-blue-300', label: 'text-blue-300' },
+  pink: { border: 'border-pink-400/30', text: 'text-pink-300', label: 'text-pink-300' },
+}
+
 function SectionColumn({ title, color, sections, onAssign, onDelete, onMove, activeSectionId }: any) {
+  const tone = SECTION_COLOR[color] ?? SECTION_COLOR.blue
   return (
-    <Card className={`border-2 border-${color}-200`}>
-      <CardHeader className="pb-2"><CardTitle className={`text-sm font-semibold text-${color}-700`}>{title}</CardTitle></CardHeader>
+    <Card className={`border-2 ${tone.border}`}>
+      <CardHeader className="pb-2"><CardTitle className={`text-sm font-semibold ${tone.text}`}>{title}</CardTitle></CardHeader>
       <CardContent className="space-y-2">
         {sections.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">Belum ada section</p> : sections.map((sec: any, idx: number) => (
           <div key={sec.id} className={`flex items-center justify-between p-2.5 rounded-lg border ${activeSectionId === sec.id ? 'bg-accent border-primary' : 'hover:bg-accent'}`}>
@@ -527,7 +534,7 @@ function SectionColumn({ title, color, sections, onAssign, onDelete, onMove, act
               <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0} onClick={() => onMove(sec, -1)}><ArrowUp className="h-3 w-3" /></Button>
               <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === sections.length - 1} onClick={() => onMove(sec, 1)}><ArrowDown className="h-3 w-3" /></Button>
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onAssign(sec)}><Users className="h-3.5 w-3.5" /></Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-700" onClick={() => onDelete(sec.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-rose-400 hover:text-rose-300" onClick={() => onDelete(sec.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
             </div>
           </div>
         ))}

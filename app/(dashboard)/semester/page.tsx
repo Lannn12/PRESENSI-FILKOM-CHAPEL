@@ -85,7 +85,7 @@ export default function SemesterPage() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-gradient-primary">Semester</h1>
+          <h1 className="at-display text-3xl font-bold tracking-[-0.03em] text-white">Semester</h1>
           <p className="text-sm text-muted-foreground">Kelola semester aktif untuk presensi</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="rounded-xl shadow-lg gradient-primary">
@@ -95,27 +95,27 @@ export default function SemesterPage() {
 
       {/* Active semester banner */}
       {activeSemester && (
-        <Card className="border-green-200 dark:border-green-900 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 shadow-card">
+        <Card className="border-emerald-400/25 bg-gradient-to-br from-emerald-500/[0.06] to-emerald-500/[0.02] shadow-card">
           <CardContent className="py-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
-              <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/[0.07] flex items-center justify-center">
+              <CheckCircle2 className="h-6 w-6 text-emerald-300" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-green-800 dark:text-green-300">Semester Aktif: {activeSemester.nama}</p>
-              <p className="text-xs text-green-600 dark:text-green-400/80">Semua data baru terkait dengan semester ini</p>
+              <p className="text-sm font-semibold text-emerald-200">Semester Aktif: {activeSemester.nama}</p>
+              <p className="text-xs text-emerald-300/80">Semua data baru terkait dengan semester ini</p>
             </div>
-            <Badge className="bg-green-500 text-white rounded-full px-3 py-1 text-xs font-semibold shadow-lg">Active</Badge>
+            <Badge className="bg-emerald-500/15 text-emerald-300 border border-emerald-400/25 rounded-full px-3 py-1 text-xs font-semibold shadow-lg">Active</Badge>
           </CardContent>
         </Card>
       )}
 
       {!activeSemester && !loading && (
-        <Card className="border-yellow-200 dark:border-yellow-900 bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 shadow-card">
+        <Card className="border-amber-400/25 bg-gradient-to-br from-amber-500/[0.06] to-amber-500/[0.02] shadow-card">
           <CardContent className="py-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-              <Circle className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+            <div className="w-12 h-12 rounded-xl bg-amber-500/[0.07] flex items-center justify-center">
+              <Circle className="h-6 w-6 text-amber-300" />
             </div>
-            <p className="text-sm text-yellow-800 dark:text-yellow-300 flex-1">
+            <p className="text-sm text-amber-200 flex-1">
               Belum ada semester aktif. Buat semester baru dan aktifkan untuk mulai menggunakan sistem.
             </p>
           </CardContent>
@@ -137,7 +137,7 @@ export default function SemesterPage() {
             <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
           ) : semesters.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-muted/50 flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-white/[0.02] flex items-center justify-center">
                 <Circle className="h-8 w-8 text-muted-foreground/50" />
               </div>
               <p className="text-muted-foreground text-sm">Belum ada semester. Buat semester pertama Anda.</p>
@@ -146,7 +146,7 @@ export default function SemesterPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/30">
+                  <TableRow className="bg-white/[0.02]">
                     <TableHead className="font-semibold">Nama Semester</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Dibuat</TableHead>
@@ -155,11 +155,11 @@ export default function SemesterPage() {
                 </TableHeader>
                 <TableBody>
                   {semesters.map(s => (
-                    <TableRow key={s.id} className="hover:bg-muted/30">
+                    <TableRow key={s.id} className="hover:bg-white/[0.02]">
                       <TableCell className="font-medium text-sm">{s.nama}</TableCell>
                       <TableCell>
                         {s.is_active ? (
-                          <Badge className="bg-green-500 text-white text-xs rounded-full px-3 py-1 shadow-lg shadow-green-500/30">
+                          <Badge className="bg-emerald-500/15 text-emerald-300 border border-emerald-400/25 text-xs rounded-full px-3 py-1 shadow-float">
                             <CheckCircle2 className="h-3 w-3 mr-1" />Aktif
                           </Badge>
                         ) : (
@@ -175,7 +175,7 @@ export default function SemesterPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-8 text-xs rounded-xl border-green-300 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/30"
+                              className="h-8 text-xs rounded-xl border-emerald-400/25 text-emerald-300 hover:bg-emerald-500/10"
                               disabled={activating === s.id}
                               onClick={() => handleActivate(s.id)}
                             >
@@ -190,7 +190,7 @@ export default function SemesterPage() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-8 w-8 rounded-xl text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                              className="h-8 w-8 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
                               onClick={() => setDeleteId(s.id)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -209,7 +209,7 @@ export default function SemesterPage() {
 
       {/* Create dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="rounded-2xl">
+        <DialogContent className="rounded-xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">Buat Semester Baru</DialogTitle>
           </DialogHeader>
@@ -239,7 +239,7 @@ export default function SemesterPage() {
 
       {/* Delete confirm */}
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <DialogContent className="rounded-2xl">
+        <DialogContent className="rounded-xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">Hapus Semester?</DialogTitle>
           </DialogHeader>
